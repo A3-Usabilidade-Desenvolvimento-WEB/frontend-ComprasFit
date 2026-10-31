@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "ComprasFit",
+    "slug": "comprasfit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FAF7F2",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.comprasfit.app"
+    },
+    "android": {
+      "package": "com.comprasfit.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "ComprasFit"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-status-bar"
+    ]
+  }
+}
