@@ -1,0 +1,1 @@
+ComprasFit 5.4 — tela Começar exibida a cada abertura do aplicativo. Após tocar em Começar, perfis com planejamento concluído vão direto ao Início; perfis novos seguem o cadastro/planejamento. Dados existentes preservados.
