@@ -50,7 +50,7 @@ function RecipeContent({ recipe, onBack, backLabel, children }: {
 }
 
 export function RecipeDetails({ id, day, onBack, onReplace }: { id: string; day?: string; onBack: () => void; onReplace: (id: string) => void }) {
-  const { state, swap, recipes } = useApp();
+  const { state, swap, recipes, toggleExcludedRecipe } = useApp();
   const c = useTheme();
   const { columns } = useResponsive();
   const [choosing, setChoosing] = useState(false);
@@ -60,6 +60,7 @@ export function RecipeDetails({ id, day, onBack, onReplace }: { id: string; day?
   const saving = useRef(false);
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return <Button title="Voltar ao início" onPress={onBack} />;
+  const excluded = state.profile.excludedRecipeIds.includes(id);
   const alternatives = eligibleRecipes(state.profile, recipes).filter(r => r.id !== id);
 
   function goBackInPicker() {
@@ -90,6 +91,7 @@ export function RecipeDetails({ id, day, onBack, onReplace }: { id: string; day?
   return <>
     <RecipeContent key={id} recipe={recipe} onBack={onBack} backLabel="Voltar">
       {!!day && <Button title="Trocar esta refeição" icon="swap-horizontal" secondary onPress={() => setChoosing(true)} />}
+      <Button title={excluded ? 'Voltar a incluir esta receita' : 'Evitar nos próximos cardápios'} secondary onPress={() => toggleExcludedRecipe(id)} />
     </RecipeContent>
     {choosing && <Modal visible animationType="slide" onRequestClose={goBackInPicker}>
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center' }}>

@@ -55,4 +55,5 @@ test('diferente prioriza pratos veganos menos usados no cardápio anterior', () 
   const params = planningInput(profile, [feijao, lentilha, pasta, side], ['feijao', 'lentilha', 'feijao']);
   assert.deepEqual(params.recipeIds, ['pasta', 'lentilha', 'feijao']);
   assert.equal(params.vegan, true);
+  assert.deepEqual(planningInput({ ...profile, excludedRecipeIds: ['feijao'] }, [feijao, lentilha, pasta, side]).recipeIds, ['lentilha', 'pasta']);
 });

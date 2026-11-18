@@ -19,7 +19,9 @@ function readLocal(raw: string | null): LocalState {
       !['days','goals','restrictions','appliances'].every(k => Array.isArray(data.profile[k as keyof Profile]))) {
     throw new Error('Preferências salvas neste aparelho estão inválidas.');
   }
-  return { ...defaults, ...data };
+  const excludedRecipeIds = Array.isArray(data.profile.excludedRecipeIds)
+    ? data.profile.excludedRecipeIds.filter(id => typeof id === 'string') : [];
+  return { ...defaults, ...data, profile: { ...data.profile, excludedRecipeIds } };
 }
 function useStore(session: Session | null, ready: boolean) {
   const userId = session?.user.id;
@@ -136,6 +138,16 @@ function useStore(session: Session | null, ready: boolean) {
     state: { ...local, plan, completed: !!active },
     updateProfile: (patch: Partial<Profile>) => setLocal(s => ({ ...s, profile: { ...s.profile, ...patch } })),
     updatePreferences: (patch: Partial<Preferences>) => setLocal(s => ({ ...s, preferences: { ...s.preferences, ...patch } })),
+    toggleExcludedRecipe: (id: string) => {
+      latestSuggestionRequest.current = undefined;
+      setSuggestionPage(null);
+      setSuggestionStatus(null);
+      setLocal(current => {
+        const ids = current.profile.excludedRecipeIds;
+        const excludedRecipeIds = ids.includes(id) ? ids.filter(recipeId => recipeId !== id) : [...ids, id];
+        return { ...current, profile: { ...current.profile, excludedRecipeIds } };
+      });
+    },
     toggleFavorite: (id: string) => setLocal(s => ({ ...s, favorites: s.favorites.includes(id) ? s.favorites.filter(f => f !== id) : [...s.favorites, id] })),
     generate: async (profile: Profile) => {
       const name = normalizePersonName(profile.name);
@@ -166,7 +178,7 @@ function useStore(session: Session | null, ready: boolean) {
           items: p.shoppingList.items.map(i => i.id === id ? updated : i) } } : p);
       } finally { pendingItems.current.delete(id); }
     },
-    reset: () => setLocal(s => ({ ...s, favorites: [], preferences: defaults.preferences })),
+    reset: () => setLocal(s => ({ ...s, profile: { ...s.profile, excludedRecipeIds: [] }, favorites: [], preferences: defaults.preferences })),
   };
 }
 const Context = createContext<ReturnType<typeof useStore> | null>(null);

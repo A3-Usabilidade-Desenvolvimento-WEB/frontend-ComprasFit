@@ -16,9 +16,10 @@ export function Preferences() {
 }
 
 export function Settings({ onEdit, onAccount }: { onEdit: (step: number) => void; onAccount: () => void }) {
-  const { state, reset } = useApp();
+  const { state, reset, recipes, toggleExcludedRecipe } = useApp();
   const c = useTheme();
   const [confirm, setConfirm] = React.useState(false);
+  const excluded = recipes.filter(recipe => state.profile.excludedRecipeIds.includes(recipe.id));
   const [info, setInfo] = React.useState<string | null>(null);
   return <ScrollView contentContainerStyle={{ padding: 24, gap: 26 }}>
     <Heading title="Configurações" subtitle="Vamos deixar tudo organizado." />
@@ -26,6 +27,13 @@ export function Settings({ onEdit, onAccount }: { onEdit: (step: number) => void
     <View style={{ gap: 12 }}><Text style={{ fontSize: 20, fontWeight: '700', color: c.text }}>Planejamento</Text><Card style={{ padding: 0 }}>{[
       ['calendar-outline', 'Orçamento semanal', 5], ['basket-outline', 'Supermercado selecionado', 2], ['restaurant-outline', 'Preferências alimentares', 7],
     ].map(([icon, label, step]) => <Pressable key={label} accessibilityRole="button" onPress={() => onEdit(Number(step))} style={[ui.row, { padding: 18 }]}><Icon name={icon as React.ComponentProps<typeof Icon>['name']} color={c.forest} size={20} /><Text style={{ flex: 1, color: c.text }}>{label}</Text><Icon name="chevron-forward" color={c.muted} size={18} /></Pressable>)}</Card></View>
+    {excluded.length > 0 && <Card style={{ gap: 12 }}>
+      <Text accessibilityRole="header" style={{ fontSize: 20, fontWeight: '700', color: c.text }}>Receitas a evitar</Text>
+      {excluded.map(recipe => <View key={recipe.id} style={{ gap: 6 }}>
+        <Text style={{ color: c.text }}>{recipe.name}</Text>
+        <Button title={`Voltar a incluir ${recipe.name}`} secondary onPress={() => toggleExcludedRecipe(recipe.id)} />
+      </View>)}
+    </Card>}
     <View style={{ gap: 12 }}><Text style={{ fontSize: 20, fontWeight: '700', color: c.text }}>Aplicativo</Text><Card style={{ padding: 0 }}>{['Sobre o ComprasFit', 'Dados e privacidade'].map(label => <Pressable key={label} accessibilityRole="button" onPress={() => setInfo(label)} style={[ui.row, { padding: 18 }]}><Text style={{ flex: 1, color: c.text }}>{label}</Text><Icon name="chevron-forward" color={c.muted} size={18} /></Pressable>)}</Card></View>
     <Button title="Redefinir preferências e favoritos" secondary onPress={() => setConfirm(true)} />
     <Text style={{ textAlign: 'center', color: c.muted, fontSize: 14 }}>ComprasFit · versão 1.0.0</Text>

@@ -2,15 +2,16 @@ import type { Recipe, PlanningInput } from '../services/api';
 import { proteinGoal, weekdays } from './recipes';
 
 export type MealCoverage = "dinner" | "lunch-dinner" | "snack";
-export type Profile = { name: string; market: string; people: number; days: string[]; coverage: MealCoverage; budget: number; goals: string[]; restrictions: string[]; appliances: string[] };
+export type Profile = { name: string; market: string; people: number; days: string[]; coverage: MealCoverage; budget: number; excludedRecipeIds: string[]; goals: string[]; restrictions: string[]; appliances: string[] };
 export const appliances = ['Fogão', 'Micro-ondas', 'Air fryer', 'Forno'];
-export const defaultProfile: Profile = { name: '', market: '', people: 1, days: weekdays.slice(0, 5), coverage: 'lunch-dinner', budget: 135, goals: [], restrictions: [], appliances: ['Fogão'] };
+export const defaultProfile: Profile = { name: '', market: '', people: 1, days: weekdays.slice(0, 5), excludedRecipeIds: [], coverage: 'lunch-dinner', budget: 135, goals: [], restrictions: [], appliances: ['Fogão'] };
 export const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 export function eligibleRecipes(profile: Profile, recipes: Recipe[]) {
   return recipes.filter(recipe => {
     const { appliances, restrictions } = recipe.preferences;
-    return recipe.mealKind === (profile.coverage === "snack" ? "snack" : "main")
+    return !profile.excludedRecipeIds.includes(recipe.id)
+      && recipe.mealKind === (profile.coverage === "snack" ? "snack" : "main")
       && (!profile.goals.includes(proteinGoal) || recipe.hasProteinMain)
       && appliances.some(a => profile.appliances.includes(a))
       && profile.restrictions.every(r => restrictions.includes(r));
