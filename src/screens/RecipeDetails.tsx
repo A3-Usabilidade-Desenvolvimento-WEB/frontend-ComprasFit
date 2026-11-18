@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ImageBackground, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Chip, Icon, ui, useTheme } from '../components/ui';
 import { errorText } from '../services/api';
-import { recipeImages } from '../data/images';
+import { recipePhotos } from '../data/images';
 import { eligibleRecipes } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
@@ -17,18 +17,25 @@ export function RecipeDetails({ id, day, onBack, onReplace }: { id: string; day?
   const people = active?.params.people ?? state.profile.people;
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return <Button title="Voltar ao início" onPress={onBack} />;
+  const photo = recipePhotos[id];
+  const credit = photo?.credit;
+  const sideBySide = wide && !!photo;
   const favorite = state.favorites.includes(id);
   const alternatives = eligibleRecipes(state.profile, recipes).filter(r => r.id !== id);
   return <ScrollView contentContainerStyle={{ paddingBottom: 30, padding: wide ? 28 : 0 }}>
-    <View style={{ flexDirection: wide ? 'row' : 'column', gap: wide ? 20 : 0, alignItems: wide ? 'flex-start' : 'stretch' }}>
-    <ImageBackground source={recipeImages[recipe.id]} style={{ height: wide ? 450 : 290, width: wide ? '43%' : '100%', justifyContent: 'space-between', borderRadius: wide ? 22 : 0, overflow: 'hidden' }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 20 }}>
-        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Voltar" style={{ padding: 11, backgroundColor: '#FFFFFFEE', borderRadius: 30 }}><Icon name="arrow-back" /></Pressable>
-        <Pressable onPress={() => toggleFavorite(id)} accessibilityRole="button" accessibilityLabel={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} style={{ padding: 11, backgroundColor: '#FFFFFFEE', borderRadius: 30 }}><Icon name={favorite ? 'heart' : 'heart-outline'} color={favorite ? '#C65C69' : '#20291F'} /></Pressable>
+    <View style={{ flexDirection: sideBySide ? 'row' : 'column', gap: sideBySide ? 20 : 0, alignItems: sideBySide ? 'flex-start' : 'stretch' }}>
+    <View style={{ width: sideBySide ? '43%' : '100%' }}>
+      <View style={{ minHeight: photo ? (sideBySide ? 400 : 260) : undefined, backgroundColor: c.white, justifyContent: 'space-between', borderRadius: wide ? 22 : 0, overflow: 'hidden' }}>
+        {photo && <Image source={photo.source} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} />}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 20 }}>
+          <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Voltar" style={{ padding: 11, backgroundColor: '#FFFFFFEE', borderRadius: 30 }}><Icon name="arrow-back" /></Pressable>
+          <Pressable onPress={() => toggleFavorite(id)} accessibilityRole="button" accessibilityLabel={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} style={{ padding: 11, backgroundColor: '#FFFFFFEE', borderRadius: 30 }}><Icon name={favorite ? 'heart' : 'heart-outline'} color={favorite ? '#C65C69' : '#20291F'} /></Pressable>
+        </View>
+        <View style={{ backgroundColor: photo ? '#152013B3' : c.white, padding: 20 }}><Text accessibilityRole="header" style={{ color: photo ? '#FFFFFF' : c.text, fontSize: 28, lineHeight: 30, fontWeight: '800' }}>{recipe.name}</Text></View>
       </View>
-      <View style={{ backgroundColor: '#152013A8', padding: 20 }}><Text style={{ color: '#FFFFFF', fontSize: 28, lineHeight: 30, fontWeight: '800' }}>{recipe.name}</Text></View>
-    </ImageBackground>
-    <View style={{ padding: 22, gap: 20, flex: wide ? 1 : undefined, minWidth: 0 }}>
+      {credit && <Text accessibilityRole="link" onPress={() => { void Linking.openURL(credit.url); }} style={{ paddingHorizontal: 12, paddingVertical: 8, color: c.muted, fontSize: 12, textDecorationLine: 'underline' }}>Foto ilustrativa · {credit.author}</Text>}
+    </View>
+    <View style={{ padding: 22, gap: 20, flex: sideBySide ? 1 : undefined, minWidth: 0 }}>
       <Text style={{ color: c.muted }}>{recipe.preparationMinutes != null && `${recipe.preparationMinutes} min · `}{people} porção(ões) · Receita-base para {recipe.servings}</Text>
       <Text accessibilityRole="header" style={{ fontSize: 22, fontWeight: '700', color: c.text }}>Ingredientes</Text>
       <Card style={{ padding: 0 }}>{recipe.ingredients.map((ingredient, i) => <View key={ingredient.name} style={[ui.row, { padding: 16, borderTopWidth: i ? 1 : 0, borderColor: c.border }]}><Text style={{ flex: 1, color: c.text }}>{ingredient.name}</Text><Text style={{ color: c.muted }}>{(ingredient.quantity * people / recipe.servings).toLocaleString('pt-BR')} {ingredient.unit}</Text></View>)}</Card>
