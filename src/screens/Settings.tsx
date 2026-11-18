@@ -27,12 +27,12 @@ export function Settings({ onEdit, onAccount }: { onEdit: (step: number) => void
       ['calendar-outline', 'Orçamento semanal', 5], ['basket-outline', 'Supermercado selecionado', 2], ['restaurant-outline', 'Preferências alimentares', 7],
     ].map(([icon, label, step]) => <Pressable key={label} accessibilityRole="button" onPress={() => onEdit(Number(step))} style={[ui.row, { padding: 18 }]}><Icon name={icon as React.ComponentProps<typeof Icon>['name']} color={c.forest} size={20} /><Text style={{ flex: 1, color: c.text }}>{label}</Text><Icon name="chevron-forward" color={c.muted} size={18} /></Pressable>)}</Card></View>
     <View style={{ gap: 12 }}><Text style={{ fontSize: 20, fontWeight: '700', color: c.text }}>Aplicativo</Text><Card style={{ padding: 0 }}>{['Sobre o ComprasFit', 'Dados e privacidade'].map(label => <Pressable key={label} accessibilityRole="button" onPress={() => setInfo(label)} style={[ui.row, { padding: 18 }]}><Text style={{ flex: 1, color: c.text }}>{label}</Text><Icon name="chevron-forward" color={c.muted} size={18} /></Pressable>)}</Card></View>
-    <Button title="Apagar dados deste dispositivo" secondary onPress={() => setConfirm(true)} />
-    <Text style={{ textAlign: 'center', color: c.muted, fontSize: 14 }}>ComprasFit · versão 1.0.0 · demonstração</Text>
+    <Button title="Redefinir preferências e favoritos" secondary onPress={() => setConfirm(true)} />
+    <Text style={{ textAlign: 'center', color: c.muted, fontSize: 14 }}>ComprasFit · versão 1.0.0</Text>
     <Modal visible={confirm || !!info} transparent animationType="fade" onRequestClose={() => { setConfirm(false); setInfo(null); }}><View style={{ flex: 1, backgroundColor: '#00000066', justifyContent: 'center', padding: 24 }}><Card style={{ gap: 18, width: '100%', maxWidth: 480, alignSelf: 'center' }}>
-      <Heading title={confirm ? 'Apagar seus dados?' : info!} />
-      <Text style={{ color: c.muted, lineHeight: 23 }}>{confirm ? 'Seu perfil, plano, favoritos e lista de compras serão removidos deste aparelho. Esta ação não pode ser desfeita.' : info === 'Dados e privacidade' ? 'Esta demonstração armazena seu nome, preferências e planejamento localmente, sem criptografia. O cadastro opcional é local, com credenciais no armazenamento seguro do aparelho; não existe backend nem sincronização entre celulares. Você pode apagar esses dados nas configurações.' : 'Planeje suas refeições e organize as compras. Esta é uma versão de demonstração do frontend, baseada no design enviado. O catálogo, os custos e a nutrição são ilustrativos.'}</Text>
-      {confirm && <Button title="Sim, apagar dados" onPress={() => { setConfirm(false); reset(); }} />}
+      <Heading title={confirm ? 'Redefinir preferências locais?' : info!} />
+      <Text style={{ color: c.muted, lineHeight: 23 }}>{confirm ? 'As preferências e os favoritos desta conta serão redefinidos neste aparelho. Seu plano continua salvo na API.' : info === 'Dados e privacidade' ? 'A autenticação usa Supabase. Planos, compras e validades pertencem à sua conta. Favoritos e preferências são guardados neste aparelho.' : 'Planeje suas refeições e organize as compras. O orçamento considera as embalagens e os preços do catálogo acadêmico.'}</Text>
+      {confirm && <Button title="Sim, redefinir" onPress={() => { setConfirm(false); reset(); }} />}
       <Button title={confirm ? 'Cancelar' : 'Entendi'} secondary onPress={() => { setConfirm(false); setInfo(null); }} />
     </Card></View></Modal>
   </ScrollView>;

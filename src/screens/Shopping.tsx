@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { downloadList, shareList } from '../data/shareList';
 import { Card, Icon, ui, useTheme } from '../components/ui';
-import { shoppingList } from '../data/planner';
+import { money } from '../data/planner';
+import { errorText } from '../services/api';
+import { Expirations } from './Expirations';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
 
 export function Shopping() {
-  const { state, toggleChecked } = useApp();
+  const { active, toggleChecked } = useApp();
   const c = useTheme();
   const { columns } = useResponsive();
   const [message, setMessage] = useState('');
-  const items = shoppingList(state.plan, state.profile.people);
+  const items = active?.shoppingList.items ?? [];
   const categories = [...new Set(items.map(i => i.category))];
-  const count = items.filter(i => state.checked.includes(i.id)).length;
-  const listText = () => `Minha lista ComprasFit\n${items.map(i => `${state.checked.includes(i.id) ? '✓' : '□'} ${i.name} — ${i.quantity.toLocaleString('pt-BR')} ${i.unit}`).join('\n')}`;
+  const count = items.filter(i => i.purchased).length;
+  const listText = () => `Minha lista ComprasFit\n${items.map(i => `${i.purchased ? '✓' : '□'} ${i.name} — ${i.packages + ' × ' + i.packageSize.toLocaleString('pt-BR')} ${i.unit}`).join('\n')}`;
   const share = async () => {
     try {
       setMessage(await shareList(listText()));
@@ -33,14 +35,14 @@ export function Shopping() {
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 22 }}>{categories.map(category => <View key={category} style={{ gap: 10, width: columns > 1 ? '48%' : '100%' }}>
       <Text style={{ fontSize: 13, color: c.muted, textTransform: 'uppercase', letterSpacing: 1 }}>{category}</Text>
       <Card style={{ padding: 0, overflow: 'hidden' }}>{items.filter(i => i.category === category).map((item, index) => {
-        const checked = state.checked.includes(item.id);
-        return <Pressable key={item.id} accessibilityRole="checkbox" accessibilityState={{ checked }} aria-checked={checked} accessibilityLabel={`${item.name}, ${item.quantity} ${item.unit}`} onPress={() => toggleChecked(item.id)} style={[ui.row, { padding: 16, borderTopWidth: index ? 1 : 0, borderColor: c.border }]}>
-          <Text style={{ fontSize: 26 }}>{item.emoji}</Text>
-          <View style={{ flex: 1, gap: 4 }}><Text style={{ color: checked ? c.muted : c.text, fontWeight: '600', textDecorationLine: checked ? 'line-through' : 'none' }}>{item.name}</Text><Text style={{ color: c.muted, fontSize: 14 }}>{item.quantity.toLocaleString('pt-BR')} {item.unit}</Text></View>
+        const checked = item.purchased;
+        return <Pressable key={item.id} accessibilityRole="checkbox" accessibilityState={{ checked }} aria-checked={checked} accessibilityLabel={`${item.name}, ${item.packages} embalagens de ${item.packageSize} ${item.unit}`} onPress={() => { setMessage(''); toggleChecked(item.id).catch(e => setMessage(errorText(e))); }} style={[ui.row, { padding: 16, borderTopWidth: index ? 1 : 0, borderColor: c.border }]}>
+          <View style={{ flex: 1, gap: 4 }}><Text style={{ color: checked ? c.muted : c.text, fontWeight: '600', textDecorationLine: checked ? 'line-through' : 'none' }}>{item.name}</Text><Text style={{ color: c.muted, fontSize: 14 }}>{item.packages} × {item.packageSize.toLocaleString('pt-BR')} {item.unit} · {money(item.subtotal)}</Text></View>
           <Icon name={checked ? 'checkmark-circle' : 'ellipse-outline'} color={checked ? c.green : c.border} size={25} />
         </Pressable>;
       })}</Card>
     </View>)}</View>
     {items.length > 0 && count === items.length && <Text style={{ textAlign: 'center', color: c.forest, paddingBottom: 20, fontWeight: '700' }}>Tudo pronto para cozinhar! 🥦</Text>}
+    <Expirations />
   </ScrollView>;
 }

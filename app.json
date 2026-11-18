@@ -15,6 +15,7 @@
     },
     "web": {
       "bundler": "metro",
+      "output": "single",
       "name": "ComprasFit"
     },
     "plugins": [

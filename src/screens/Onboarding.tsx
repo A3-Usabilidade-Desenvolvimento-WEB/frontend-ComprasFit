@@ -1,26 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Button, Chip, Heading, Icon, ui, useTheme } from '../components/ui';
-import { goalOptions, markets, weekdays } from '../data/recipes';
+import { goalOptions, weekdays } from '../data/recipes';
 import { eligibleRecipes, money } from '../data/planner';
 import type { Profile } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
 
-const marketLogos = [require('../../assets/market-0.png'), require('../../assets/market-1.png'), require('../../assets/market-2.png'), require('../../assets/market-3.png'), require('../../assets/market-4.png'), require('../../assets/market-5.png'), require('../../assets/market-6.png'), require('../../assets/market-7.png'), require('../../assets/market-8.png')];
 
 export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 1, welcomeOnly = false, onStart }: { onFinish: () => void; editing?: boolean; onCancel?: () => void; initialStep?: number; welcomeOnly?: boolean; onStart?: () => void }) {
-  const [step, setStep] = useState(welcomeOnly ? 0 : editing ? initialStep : 0);
-  const { state, generate } = useApp();
+  const [step, setStep] = useState(welcomeOnly ? 0 : initialStep);
+  const { state, generate, recipes, products } = useApp();
   const [profile, setProfile] = useState(state.profile);
   const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    if (!generating) return;
-    const timer = setInterval(() => setProgress(p => Math.min(3, p + 1)), 850);
-    return () => clearInterval(timer);
-  }, [generating]);
+  const [message, setMessage] = useState('');
+  const markets = [...new Set(products.map(p => p.price?.store).filter((s): s is string => !!s))];
   const updateProfile = (patch: Partial<Profile>) => setProfile(current => ({ ...current, ...patch }));
   const c = useTheme();
   const { wide } = useResponsive();
@@ -30,16 +25,13 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
     if (key === 'restrictions') next = value === 'Nenhuma' ? [] : next;
     updateProfile({ [key]: next });
   };
-  const valid = step === 1 ? !!profile.name.trim() : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile).length > 0 : true;
-  const finish = () => {
+  const valid = step === 1 ? !!profile.name.trim() : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile, recipes).length > 0 : true;
+  const finish = async () => {
     if (generating) return;
-    setProgress(0);
-    setGenerating(true);
-    // The recipes are generated locally; show progress before navigating to the plan.
-    setTimeout(() => {
-      generate({ ...profile, name: profile.name.trim() });
-      onFinish();
-    }, 2800);
+    setGenerating(true); setMessage('');
+    try { await generate({ ...profile, name: profile.name.trim() }); onFinish(); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Falha ao gerar o planejamento.'); }
+    finally { setGenerating(false); }
   };
   if (generating) return <View style={{ flex: 1, backgroundColor: c.bg, paddingHorizontal: 30, paddingTop: 52, paddingBottom: 42, justifyContent: 'space-between' }}>
     <Text accessibilityRole="header" style={{ fontSize: 26, fontWeight: '800', color: c.text, lineHeight: 33 }}>Estamos planejando sua semana</Text>
@@ -47,12 +39,6 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
       <Text style={{ fontSize: 92 }}>🛒</Text>
       <ActivityIndicator size="large" color={c.green} />
       <Text style={{ fontSize: 16, color: c.muted, textAlign: 'center' }}>Organizando suas refeições e sua lista de compras…</Text>
-    </View>
-    <View style={{ padding: 20, borderRadius: 25, backgroundColor: c.white, gap: 21 }}>
-      {['Encaixando refeições no seu orçamento', 'Organizando os jantares da semana', 'Montando sua lista de compras'].map((label, index) => <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Icon name={progress > index ? 'checkmark-circle' : 'ellipse-outline'} size={23} color={progress > index ? c.green : c.muted} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: c.text, flex: 1 }}>{label}</Text>
-      </View>)}
     </View>
   </View>;
   if (step === 0) return <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
@@ -104,7 +90,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
       <Heading title={titles[step]!} subtitle={subtitles[step]} />
       <View style={{ flex: 1, justifyContent: step === 1 || step === 2 ? 'flex-start' : 'center', paddingVertical: 32, gap: 16 }}>
         {step === 1 && <TextInput accessibilityLabel="Seu nome" placeholder="Digite aqui" placeholderTextColor={c.muted} value={profile.name} onChangeText={name => updateProfile({ name })} autoCapitalize="words" maxLength={50} returnKeyType="next" onSubmitEditing={() => valid && setStep(2)} style={{ backgroundColor: c.white, color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 18, fontSize: 20 }} />}
-        {step === 2 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{markets.map((market, i) => <View key={market} style={{ width: '30%', flexGrow: 1 }}><Pressable accessibilityRole="button" accessibilityLabel={market} onPress={() => updateProfile({ market })} style={{ alignItems: 'center', padding: 10, borderWidth: profile.market === market ? 2 : 1, borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}><Image source={marketLogos[i]} resizeMode="contain" style={{ width: 65, height: 65 }} /><Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text></Pressable></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Seleção ilustrativa. Sem consulta de preços ou vínculo com os mercados.</Text></>}
+        {step === 2 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{markets.map((market) => <View key={market} style={{ width: '30%', flexGrow: 1 }}><Pressable accessibilityRole="button" accessibilityLabel={market} onPress={() => updateProfile({ market })} style={{ alignItems: 'center', padding: 10, borderWidth: profile.market === market ? 2 : 1, borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}><Icon name="basket-outline" color={c.green} /><Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text></Pressable></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Lojas do catálogo. Sua preferência fica salva neste dispositivo. O orçamento usa os preços cadastrados na API.</Text></>}
         {step === 3 && <><View style={[ui.row, { justifyContent: 'center', gap: 35 }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Diminuir pessoas" disabled={profile.people <= 1} onPress={() => updateProfile({ people: profile.people - 1 })} style={{ padding: 12, backgroundColor: c.white, borderRadius: 30, opacity: profile.people <= 1 ? .35 : 1 }}><Icon name="remove" color={c.text} /></Pressable>
           <Text style={{ fontSize: 74, fontWeight: '800', color: c.text }}>{profile.people}</Text>
@@ -113,10 +99,11 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
         {step === 4 && <><Text style={{ textAlign: 'center', color: c.muted }}>{profile.days.length} dias selecionados</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{weekdays.map(day => <View key={day} style={{ width: '46%', flexGrow: 1 }}><Chip title={day} selected={profile.days.includes(day)} onPress={() => toggle('days', day)} /></View>)}</View></>}
         {step === 5 && <><Text style={{ fontSize: 58, fontWeight: '800', textAlign: 'center', color: c.text }}>{money(profile.budget)}</Text><Text style={{ textAlign: 'center', color: c.muted }}>para as refeições desta semana</Text><Slider accessibilityLabel="Orçamento semanal" minimumValue={30} maximumValue={750} step={5} value={profile.budget} onValueChange={budget => updateProfile({ budget })} minimumTrackTintColor={c.green} maximumTrackTintColor={c.border} thumbTintColor={c.green} style={{ width: '100%', height: 48 }} /><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: c.muted }}>R$ 30</Text><Text style={{ color: c.muted }}>R$ 750</Text></View></>}
         {step === 6 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{goalOptions.map(goal => <View key={goal.name} style={{ width: '46%', flexGrow: 1 }}><Chip title={goal.name} emoji={goal.emoji} color={goal.color} selected={profile.goals.includes(goal.name)} onPress={() => toggle('goals', goal.name)} /></View>)}</View>}
-        {step === 7 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Nenhuma', 'Vegetariano', 'Vegano', 'Peixe', 'Glúten'].map((restriction, i) => <View key={restriction} style={{ width: '46%', flexGrow: 1 }}><Chip title={restriction} emoji={['🍽️','🥕','🥬','🐟','🌾'][i]} selected={restriction === 'Nenhuma' ? !profile.restrictions.length : profile.restrictions.includes(restriction)} onPress={() => toggle('restrictions', restriction)} /></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Opções disponíveis nesta demonstração. Confira sempre os ingredientes; o app não garante ausência de alérgenos.</Text></>}
-        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Fogão', 'Micro-ondas', 'Air fryer', 'Forno'].map((appliance, i) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={appliance} emoji={['🍳','♨️','🥘','🍞'][i]} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>As receitas de demonstração precisam de fogão; a salada também pode ser preparada no micro-ondas. Escolha um equipamento compatível ou volte para ajustar as restrições.</Text>}</>}
+        {step === 7 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Nenhuma', 'Vegetariano', 'Vegano', 'Peixe', 'Glúten'].map((restriction, i) => <View key={restriction} style={{ width: '46%', flexGrow: 1 }}><Chip title={restriction} emoji={['🍽️','🥕','🥬','🐟','🌾'][i]} selected={restriction === 'Nenhuma' ? !profile.restrictions.length : profile.restrictions.includes(restriction)} onPress={() => toggle('restrictions', restriction)} /></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Confira sempre os rótulos dos produtos em caso de alergias.</Text></>}
+        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Fogão', 'Micro-ondas', 'Air fryer', 'Forno'].map((appliance, i) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={appliance} emoji={['🍳','♨️','🥘','🍞'][i]} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>Nenhuma receita do catálogo atende às restrições e aos equipamentos selecionados.</Text>}</>}
       </View>
     </ScrollView>
+    {!!message && <Text accessibilityRole="alert" style={{ paddingHorizontal: 24, color: c.text }}>{message}</Text>}
     <View style={{ padding: 24 }}><Button title={step === 8 ? 'Montar minha semana' : 'Continuar'} disabled={!valid} onPress={() => step === 8 ? finish() : setStep(step + 1)} icon="arrow-forward" /></View>
   </View>;
 }

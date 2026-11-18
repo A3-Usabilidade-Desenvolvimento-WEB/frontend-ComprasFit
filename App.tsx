@@ -12,7 +12,7 @@ import { Preferences, Settings } from './src/screens/Settings';
 import { Account } from './src/screens/Account';
 import { ScrollView } from 'react-native';
 import { RecipeCard } from './src/components/RecipeCard';
-import { recipes } from './src/data/recipes';
+import { Button } from './src/components/ui';
 import { useResponsive } from './src/components/responsive';
 
 type Tab = 'home' | 'favorites' | 'preferences' | 'settings';
@@ -25,11 +25,11 @@ const tabs: { id: Tab; label: string; icon: React.ComponentProps<typeof Icon>['n
 ];
 
 function Main() {
-  const { state, loaded, storageError } = useApp();
+  const { state, loaded, storageError, loadError, retry, session, recipes } = useApp();
   const c = useTheme();
   const { wide, columns } = useResponsive();
   const [tab, setTab] = useState<Tab>('home');
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(!session);
   const [screen, setScreen] = useState<Screen>({ type: 'tab' });
   const [previousTab, setPreviousTab] = useState<Tab>('home');
   const goBack = () => { setScreen({ type: 'tab' }); setTab(previousTab); }; 
@@ -49,10 +49,12 @@ function Main() {
   const openShopping = () => { setPreviousTab(tab); setScreen({ type: 'shopping' }); };
   const finish = () => { setScreen({ type: 'tab' }); setTab('home'); };
   let content: React.ReactNode;
-  if (!loaded) content = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={c.green} size="large" /><Text style={{ color: c.muted, marginTop: 15 }}>Preparando sua cozinha…</Text></View>;
+  if (loadError) content = <View style={{ flex: 1, padding: 24, gap: 16 }}><Text accessibilityRole="alert" style={{ color: c.text }}>{loadError}</Text><Button title="Tentar novamente" onPress={retry} /><Account /></View>;
+  else if (!loaded) content = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={c.green} size="large" /><Text style={{ color: c.muted, marginTop: 15 }}>Preparando sua cozinha…</Text></View>;
   else if (showWelcome) content = <Onboarding welcomeOnly onStart={() => setShowWelcome(false)} onFinish={finish} />;
-  else if (!state.completed || screen.type === 'edit') content = <Onboarding onFinish={finish} editing={state.completed} initialStep={screen.type === 'edit' ? screen.step : 1} onCancel={goBack} />;
+  else if (!session) content = <Account />;
   else if (screen.type === 'account') content = <Account onBack={goBack} />;
+  else if (!state.completed || screen.type === 'edit') content = <Onboarding onFinish={finish} editing={state.completed} initialStep={screen.type === 'edit' ? screen.step : 1} onCancel={goBack} />;
   else if (screen.type === 'recipe') content = <RecipeDetails id={screen.id} day={screen.day} onBack={goBack} onReplace={id => setScreen({ ...screen, id })} />;
   else if (screen.type === 'shopping') content = <><Pressable accessibilityRole="button" accessibilityLabel="Voltar ao início" onPress={goBack} style={{ paddingHorizontal: 24, paddingTop: 18 }}><Icon name="arrow-back" color={c.text} /></Pressable><Shopping /></>;
   else if (tab === 'home') content = <Home onRecipe={onRecipe} onShopping={openShopping} onEdit={() => openEdit()} />;
@@ -62,6 +64,7 @@ function Main() {
   return <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
     <StatusBar style={state.preferences.dark ? 'light' : 'dark'} />
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      {loaded && session && !state.completed && screen.type !== 'account' && <Pressable accessibilityRole="button" accessibilityLabel="Minha conta" onPress={() => setScreen({ type: 'account' })} style={{ alignSelf: 'flex-end', padding: 12 }}><Text style={{ color: c.green }}>Minha conta</Text></Pressable>}
       {!!storageError && <Text accessibilityRole="alert" style={{ padding: 12, backgroundColor: '#FBE3CF', color: '#703D1E', fontSize: 14 }}>{storageError}</Text>}
       <View style={{ flex: 1, flexDirection: 'row' }}>
         {wide && loaded && state.completed && !showWelcome && screen.type !== 'edit' && <View style={{ width: 232, backgroundColor: c.white, borderRightWidth: 1, borderColor: c.border, padding: 22, gap: 30 }}>

@@ -1,52 +1,27 @@
-import { recipes, weekdays } from './recipes';
+import type { Recipe, PlanningInput } from '../services/api';
+import { weekdays } from './recipes';
 
 export type Profile = { name: string; market: string; people: number; days: string[]; budget: number; goals: string[]; restrictions: string[]; appliances: string[] };
-export type PlanEntry = { day: string; recipeId: string };
-export const defaultProfile: Profile = { name: '', market: 'Verdemar', people: 1, days: weekdays.slice(0, 5), budget: 135, goals: [], restrictions: [], appliances: ['Fogão'] };
+export const defaultProfile: Profile = { name: '', market: '', people: 1, days: weekdays.slice(0, 5), budget: 135, goals: [], restrictions: [], appliances: ['Fogão'] };
 export const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-export function eligibleRecipes(profile: Profile) {
+export function eligibleRecipes(profile: Profile, recipes: Recipe[]) {
   return recipes.filter(recipe => {
-    const vegetarian = profile.restrictions.includes('Vegetariano') || profile.restrictions.includes('Vegano');
-    if (vegetarian && recipe.id !== 'vegetais') return false;
-    if (profile.restrictions.some(restriction => recipe.restrictions.includes(restriction))) return false;
-    return recipe.appliances.some(appliance => profile.appliances.includes(appliance));
+    const { appliances, restrictions } = recipe.preferences;
+    return appliances.some(a => profile.appliances.includes(a))
+      && profile.restrictions.every(r => restrictions.includes(r));
   });
 }
 
-// Demonstration only: prices and nutrition are local estimates, not store quotes.
-export function createPlan(profile: Profile): PlanEntry[] {
-  const available = eligibleRecipes(profile).sort((a, b) => {
-    const score = (goals: string[]) => goals.filter(goal => profile.goals.includes(goal)).length;
-    return score(b.goals) - score(a.goals);
-  });
-  if (!available.length) return [];
-  const cheapest = [...available].sort((a, b) => a.cost - b.cost)[0]!;
-  const orderedDays = weekdays.filter(day => profile.days.includes(day));
-  let remaining = profile.budget;
-  return orderedDays.map((day, index) => {
-    const preferred = available[index % available.length]!;
-    const remainingMinimum = cheapest.cost * profile.people * (orderedDays.length - index - 1);
-    const recipe = preferred.cost * profile.people + remainingMinimum <= remaining ? preferred : cheapest;
-    remaining -= recipe.cost * profile.people;
-    return { day, recipeId: recipe.id };
-  });
-}
-
-export function planCost(plan: PlanEntry[], people: number) {
-  return plan.reduce((sum, entry) => sum + (recipes.find(r => r.id === entry.recipeId)?.cost ?? 0) * people, 0);
-}
-
-export function shoppingList(plan: PlanEntry[], people: number) {
-  const items = new Map<string, { id: string; name: string; emoji: string; category: string; unit: string; quantity: number }>();
-  for (const entry of plan) {
-    const recipe = recipes.find(r => r.id === entry.recipeId);
-    for (const ingredient of recipe?.ingredients ?? []) {
-      const id = `${ingredient.name}:${ingredient.unit}`;
-      const existing = items.get(id);
-      if (existing) existing.quantity += ingredient.quantity * people;
-      else items.set(id, { ...ingredient, id, quantity: ingredient.quantity * people });
-    }
-  }
-  return [...items.values()].sort((a, b) => a.category.localeCompare(b.category));
+export function planningInput(profile: Profile, recipes: Recipe[]): PlanningInput {
+  const available = eligibleRecipes(profile, recipes);
+  if (!available.length) throw new Error('Nenhuma receita combina com suas restrições e equipamentos.');
+  const preferred = available.filter(r => r.preferences.goals.some(g => profile.goals.includes(g)));
+  const dayLabels = weekdays.filter(day => profile.days.includes(day));
+  return {
+    people: profile.people, budget: profile.budget, periodDays: dayLabels.length, mealsPerDay: 1,
+    dayLabels, buyingPreference: profile.goals.includes('Diferente') ? 'variety' : 'lowest_price',
+    vegetarian: profile.restrictions.some(r => r === 'Vegetariano' || r === 'Vegano'),
+    recipeIds: (preferred.length ? preferred : available).map(r => r.id),
+  };
 }

@@ -2,23 +2,32 @@ import React from 'react';
 import { AppState, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, Card, Heading, Icon, ui, useTheme } from '../components/ui';
 import { RecipeCard } from '../components/RecipeCard';
-import { recipes } from '../data/recipes';
-import { money, planCost, shoppingList } from '../data/planner';
+import { api, errorText, type Suggestions } from '../services/api';
+import { money } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
 
 export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, day?: string) => void; onShopping: () => void; onEdit: () => void }) {
-  const { state } = useApp();
+  const { state, recipes, active, session } = useApp();
+  const [suggestions, setSuggestions] = React.useState<Suggestions | null>(null);
+  const [error, setError] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const suggest = async () => {
+    if (!active || !session) return;
+    setBusy(true); setError('');
+    try { setSuggestions(await api.suggestions(session.user.id, active.id)); }
+    catch (e) { setError(errorText(e)); } finally { setBusy(false); }
+  };
   const [hour, setHour] = React.useState(new Date().getHours());
   React.useEffect(() => { const sub = AppState.addEventListener('change', status => { if (status === 'active') setHour(new Date().getHours()); }); const interval = setInterval(() => setHour(new Date().getHours()), 60000); return () => { sub.remove(); clearInterval(interval); }; }, []);
   const greeting = hour >= 5 && hour < 12 ? 'BOM DIA' : hour >= 12 && hour < 18 ? 'BOA TARDE' : 'BOA NOITE';
   const c = useTheme();
   const { wide, columns } = useResponsive();
-  const total = planCost(state.plan, state.profile.people);
-  const list = shoppingList(state.plan, state.profile.people);
-  const checked = list.filter(item => state.checked.includes(item.id)).length;
+  const total = active?.total ?? 0;
+  const list = active?.shoppingList.items ?? [];
+  const checked = list.filter(item => item.purchased).length;
   const firstName = (state.profile.name || 'Chef').trim().split(' ')[0];
-  const percent = state.profile.budget > 0 ? Math.min(100, Math.round(total / state.profile.budget * 100)) : 0;
+  const percent = (active?.budget ?? state.profile.budget) > 0 ? Math.min(100, Math.round(total / (active?.budget ?? state.profile.budget) * 100)) : 0;
   return <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: wide ? 36 : 22, paddingTop: 28, paddingBottom: 48, gap: 25 }}>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <View style={{ flex: 1, gap: 7 }}>
@@ -33,8 +42,8 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
         <Text style={{ color: '#C7EBD8', fontSize: 15, fontWeight: '600' }}>Seu orçamento semanal</Text>
         <Icon name="wallet-outline" color="#D7F3E4" size={23}/>
       </View>
-      <View style={{ gap: 4 }}><Text style={{ color: '#FFFFFF', fontSize: 35, fontWeight: '800', letterSpacing: -1 }}>{money(total)}</Text><Text style={{ color: '#C7EBD8', fontSize: 15 }}>de {money(state.profile.budget)} disponíveis</Text></View>
-      <View style={{ height: 8, borderRadius: 8, backgroundColor: '#478B70', overflow: 'hidden' }}><View style={{ height: '100%', width: `${percent}%`, borderRadius: 8, backgroundColor: total > state.profile.budget ? '#FFC77B' : '#B6F0CF' }}/></View>
+      <View style={{ gap: 4 }}><Text style={{ color: '#FFFFFF', fontSize: 35, fontWeight: '800', letterSpacing: -1 }}>{money(total)}</Text><Text style={{ color: '#C7EBD8', fontSize: 15 }}>de {money((active?.budget ?? state.profile.budget))} disponíveis</Text></View>
+      <View style={{ height: 8, borderRadius: 8, backgroundColor: '#478B70', overflow: 'hidden' }}><View style={{ height: '100%', width: `${percent}%`, borderRadius: 8, backgroundColor: total > (active?.budget ?? state.profile.budget) ? '#FFC77B' : '#B6F0CF' }}/></View>
       <Text style={{ color: '#DDF4E6', fontSize: 14 }}>{percent}% do orçamento estimado</Text>
     </View>
     <Pressable onPress={onShopping} accessibilityRole="button" accessibilityLabel="Abrir lista de compras" style={{ flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 22, backgroundColor: '#F0F7F3', gap: 15 }}>
@@ -56,6 +65,13 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
       {!state.plan.length && <Card><Text style={{ color: c.muted }}>Nenhuma receita compatível. Ajuste suas preferências para montar um plano.</Text></Card>}
     </View>
     <Button title="Editar planejamento" secondary icon="options-outline" onPress={onEdit}/>
-    <Text style={{ textAlign: 'center', fontSize: 13, lineHeight: 17, color: c.muted }}>{total > state.profile.budget ? 'O custo estimado supera seu orçamento. Revise seu planejamento.' : 'Preços e valores nutricionais são estimativas ilustrativas.'}</Text>
+    <Button title="Sugestões de receitas" secondary busy={busy} onPress={suggest} />
+    {!!error && <Text accessibilityRole="alert" style={{ color: c.text }}>{error}</Text>}
+    {suggestions && <View style={{ gap: 12 }}>
+      <Text style={{ color: c.muted }}>{suggestions.source === 'fallback' ? 'Receitas de referência do catálogo' : 'Receitas com os itens da sua lista'}</Text>
+      {suggestions.suggestions.map(r => <Card key={r.name}><Text style={{ fontWeight: '700', color: c.text }}>{r.name}</Text>
+        <Text style={{ color: c.muted }}>{r.ingredients.join(', ')}</Text><Text style={{ color: c.text }}>{r.steps.join('\n')}</Text></Card>)}
+    </View>}
+    <Text style={{ textAlign: 'center', color: c.muted }}>Total estimado pelas embalagens e preços cadastrados.</Text>
   </ScrollView>;
 }
