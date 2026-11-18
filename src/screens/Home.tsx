@@ -1,23 +1,13 @@
 import React from 'react';
 import { AppState, Pressable, ScrollView, Text, View } from 'react-native';
-import { Button, Card, Heading, Icon, ui, useTheme } from '../components/ui';
+import { Button, Card, Icon, useTheme } from '../components/ui';
 import { RecipeCard } from '../components/RecipeCard';
-import { api, errorText, type Suggestions } from '../services/api';
 import { money } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
 
 export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, day?: string) => void; onShopping: () => void; onEdit: () => void }) {
-  const { state, recipes, active, session } = useApp();
-  const [suggestions, setSuggestions] = React.useState<Suggestions | null>(null);
-  const [error, setError] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
-  const suggest = async () => {
-    if (!active || !session) return;
-    setBusy(true); setError('');
-    try { setSuggestions(await api.suggestions(session.user.id, active.id)); }
-    catch (e) { setError(errorText(e)); } finally { setBusy(false); }
-  };
+  const { state, recipes, active, suggestions, suggestionStatus, loadMoreSuggestions } = useApp();
   const [hour, setHour] = React.useState(new Date().getHours());
   React.useEffect(() => { const sub = AppState.addEventListener('change', status => { if (status === 'active') setHour(new Date().getHours()); }); const interval = setInterval(() => setHour(new Date().getHours()), 60000); return () => { sub.remove(); clearInterval(interval); }; }, []);
   const greeting = hour >= 5 && hour < 12 ? 'BOM DIA' : hour >= 12 && hour < 18 ? 'BOA TARDE' : 'BOA NOITE';
@@ -65,13 +55,26 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
       {!state.plan.length && <Card><Text style={{ color: c.muted }}>Nenhuma receita compatível. Ajuste suas preferências para montar um plano.</Text></Card>}
     </View>
     <Button title="Editar planejamento" secondary icon="options-outline" onPress={onEdit}/>
-    <Button title="Sugestões de receitas" secondary busy={busy} onPress={suggest} />
-    {!!error && <Text accessibilityRole="alert" style={{ color: c.text }}>{error}</Text>}
-    {suggestions && <View style={{ gap: 12 }}>
-      <Text style={{ color: c.muted }}>{suggestions.source === 'fallback' ? 'Receitas de referência do catálogo' : 'Receitas com os itens da sua lista'}</Text>
-      {suggestions.suggestions.map(r => <Card key={r.name}><Text style={{ fontWeight: '700', color: c.text }}>{r.name}</Text>
-        <Text style={{ color: c.muted }}>{r.ingredients.join(', ')}</Text><Text style={{ color: c.text }}>{r.steps.join('\n')}</Text></Card>)}
-    </View>}
+    <View style={{ gap: 15 }}>
+      {suggestions && <>
+        <Text accessibilityRole="header" style={{ color: c.text, fontSize: 25, fontWeight: '800' }}>Sugestões para seu cardápio</Text>
+        {suggestions.suggestions.length === 0 && <Text style={{ color: c.muted }}>Nenhuma outra receita combina com suas preferências e equipamentos.</Text>}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15 }}>
+          {suggestions.suggestions.map(item => {
+            const recipe = recipes.find(candidate => candidate.id === item.recipeId);
+            const missing = item.ingredients.length - item.ingredientsInList;
+            const detail = missing === 0 ? 'Todos os ingredientes na lista de compras'
+              : missing === 1 ? '1 ingrediente fora da lista de compras' : `${missing} ingredientes fora da lista de compras`;
+            return recipe ? <View key={recipe.id} style={{ width: columns === 3 ? '31.5%' : columns === 2 ? '48%' : '100%' }}>
+              <RecipeCard recipe={recipe} detail={detail} onPress={() => onRecipe(recipe.id)} />
+            </View> : null;
+          })}
+        </View>
+        {suggestions.suggestions.length > 0 && suggestions.nextOffset === null && <Text style={{ color: c.muted }}>Você viu todas as sugestões para este plano.</Text>}
+      </>}
+      {!!suggestionStatus?.error && <Text accessibilityRole="alert" style={{ color: c.text }}>{suggestionStatus.error}</Text>}
+      {suggestions?.nextOffset !== null && <Button title={suggestions ? 'Mais sugestões' : 'Sugestões de receitas'} secondary busy={suggestionStatus?.busy} onPress={loadMoreSuggestions} />}
+    </View>
     <Text style={{ textAlign: 'center', color: c.muted }}>Total estimado pelas embalagens e preços cadastrados.</Text>
   </ScrollView>;
 }

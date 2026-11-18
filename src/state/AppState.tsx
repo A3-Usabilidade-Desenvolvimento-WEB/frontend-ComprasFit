@@ -2,9 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
-import { defaultProfile, planningInput, type Profile } from '../data/planner';
+import { defaultProfile, eligibleRecipes, planningInput, type Profile } from '../data/planner';
 import { weekdays } from '../data/recipes';
-import { api, errorText, type Planning, type Recipe } from '../services/api';
+import { api, errorText, type Planning, type Recipe, type Suggestions } from '../services/api';
 import { auth } from '../services/auth';
 
 type Preferences = { dark: boolean; reminders: boolean; weekStart: 'Segunda-feira' | 'Domingo'; language?: 'pt-BR' | 'en' | 'es' };
@@ -24,6 +24,10 @@ function useStore(session: Session | null, ready: boolean) {
   const userId = session?.user.id;
   const key = 'comprasfit:v2:' + userId;
   const [local, setLocal] = useState<LocalState>(defaults);
+  const [suggestionPage, setSuggestionPage] = useState<(Suggestions & { planningId: string }) | null>(null);
+  const [suggestionStatus, setSuggestionStatus] = useState<{ planningId: string; busy: boolean; error: string } | null>(null);
+  const pendingSuggestions = useRef(new Set<string>());
+  const latestSuggestionRequest = useRef<string>(undefined);
   const [active, setActive] = useState<Planning | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [markets, setMarkets] = useState<string[]>([]);
@@ -85,6 +89,28 @@ function useStore(session: Session | null, ready: boolean) {
       setLocal(old => ({ ...old, profile }));
     } finally { savingPlan.current = false; }
   }
+  const suggestions = suggestionPage?.planningId === active?.id ? suggestionPage : null;
+  const status = suggestionStatus?.planningId === active?.id ? suggestionStatus : null;
+
+  async function loadMoreSuggestions() {
+    if (!active || !userId || suggestions?.nextOffset === null || pendingSuggestions.current.has(active.id)) return;
+    const planningId = active.id;
+    const eligibleIds = eligibleRecipes(local.profile, recipes).map(recipe => recipe.id);
+    pendingSuggestions.current.add(planningId);
+    latestSuggestionRequest.current = planningId;
+    setSuggestionStatus({ planningId, busy: true, error: '' });
+    try {
+      const page = await api.suggestions(userId, planningId, suggestions?.nextOffset ?? 0, eligibleIds);
+      if (latestSuggestionRequest.current !== planningId) return;
+      setSuggestionPage({ ...page, planningId, suggestions: [...(suggestions?.suggestions ?? []), ...page.suggestions] });
+      setSuggestionStatus({ planningId, busy: false, error: '' });
+    } catch (error) {
+      if (latestSuggestionRequest.current === planningId) setSuggestionStatus({ planningId, busy: false, error: errorText(error) });
+    } finally {
+      pendingSuggestions.current.delete(planningId);
+    }
+  }
+
   const plan = active?.meals.map(meal => {
     const label = active.params.dayLabels?.[meal.day - 1] || 'Dia ' + meal.day;
     return { recipeId: meal.recipeId, day: active.params.mealsPerDay > 1 ? label + ' · ' + meal.slot : label };
@@ -92,6 +118,7 @@ function useStore(session: Session | null, ready: boolean) {
 
   return {
     session, recipes, markets, active, loaded: ready && (!userId || loaded), storageError, loadError,
+    suggestions, suggestionStatus: status, loadMoreSuggestions,
     retry: () => setAttempt(n => n + 1),
     state: { ...local, plan, completed: !!active },
     updateProfile: (patch: Partial<Profile>) => setLocal(s => ({ ...s, profile: { ...s.profile, ...patch } })),

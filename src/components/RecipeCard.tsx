@@ -5,7 +5,7 @@ import { recipePhotos } from '../data/images';
 import { Icon, useTheme } from './ui';
 import { useApp } from '../state/AppState';
 
-export function RecipeCard({ recipe, day, onPress }: { recipe: Recipe; day?: string; onPress: () => void }) {
+export function RecipeCard({ recipe, day, detail, onPress }: { recipe: Recipe; day?: string; detail?: string; onPress: () => void }) {
   const c = useTheme();
   const { state, toggleFavorite } = useApp();
   const favorite = state.favorites.includes(recipe.id);
@@ -23,6 +23,7 @@ export function RecipeCard({ recipe, day, onPress }: { recipe: Recipe; day?: str
         {!photo && day && <Text style={{ color: c.green, fontWeight: '700' }}>{day}</Text>}
         <Text style={{ color: c.text, fontSize: 19, fontWeight: '800', lineHeight: 22 }}>{recipe.name}</Text>
         <Text style={{ color: c.muted }}>{recipe.preparationMinutes != null && `${recipe.preparationMinutes} min · `}{recipe.ingredients.length} ingredientes · {recipe.servings} porções na receita-base</Text>
+        {!!detail && <Text style={{ color: c.green, fontWeight: '600', fontSize: 13 }}>{detail}</Text>}
       </View>
     </Pressable>
     <Pressable onPress={() => toggleFavorite(recipe.id)} accessibilityRole="button" accessibilityLabel={favorite ? `Remover ${recipe.name} dos favoritos` : `Favoritar ${recipe.name}`} hitSlop={8} style={{ position: 'absolute', top: 12, right: 12, backgroundColor: photo ? '#FFFFFF' : c.white, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}>

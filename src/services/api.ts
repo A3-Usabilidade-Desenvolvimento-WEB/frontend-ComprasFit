@@ -36,8 +36,9 @@ export interface Expiration {
   daysLeft: number; status: 'expired' | 'expiring_soon' | 'ok'; registeredAt: string;
 }
 export interface Suggestions {
-  source: 'deterministic' | 'fallback';
-  suggestions: { name: string; ingredients: string[]; steps: string[] }[];
+  source: 'catalog';
+  suggestions: { recipeId: string; name: string; ingredients: string[]; steps: string[]; ingredientsInList: number }[];
+  nextOffset: number | null;
 }
 
 export class ApiError extends Error {
@@ -94,7 +95,8 @@ export const api = {
   create: (user: string, input: PlanningInput) => request<Planning>('/planejamento', user, 'POST', input),
   purchase: (user: string, id: string, item: ShoppingItem) => request<ShoppingItem>(
     planPath(id) + '/itens/' + encodeURIComponent(item.id), user, 'PATCH', { purchased: !item.purchased }),
-  suggestions: (user: string, planningId: string) => request<Suggestions>('/ia/sugestao', user, 'POST', { planningId }),
+  suggestions: (user: string, planningId: string, offset: number, eligibleRecipeIds: string[]) =>
+    request<Suggestions>('/ia/sugestao', user, 'POST', { planningId, offset, eligibleRecipeIds }),
   expirations: (user: string) => request<Expiration[]>('/validade', user),
   register: (user: string, input: { name?: string; productId?: string; expirationDate: string }) =>
     request<Expiration>('/validade', user, 'POST', input),
