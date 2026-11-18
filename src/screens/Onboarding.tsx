@@ -34,6 +34,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
   };
   const validName = normalizePersonName(profile.name);
   const valid = step === 1 ? validName !== null : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile, recipes).length > 0 : true;
+  const applianceLabel = (appliance: string) => appliance === 'Air fryer' ? 'Airfryer' : appliance;
   const alternativeAppliances = step === 8 && !valid
     ? appliances.filter(appliance => eligibleRecipes({ ...profile, appliances: [appliance] }, recipes).length > 0)
     : [];
@@ -94,7 +95,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
     </ScrollView>
     <View style={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 22, backgroundColor: '#FFFFFF', width: '100%', maxWidth: 480, alignSelf: 'center' }}><Button title="Começar" icon="arrow-forward" onPress={() => welcomeOnly ? onStart?.() : setStep(1)} /></View>
   </View>;
-  const titles = ['','Qual é seu nome?', 'Escolha seu supermercado', 'Para quantas pessoas você cozinha?', 'Em quais dias você vai cozinhar?', 'Qual é seu orçamento semanal?', 'Qual é seu objetivo?', 'Alguma restrição alimentar?', 'Quais eletrodomésticos você possui?'];
+  const titles = ['','Qual é seu nome?', 'Escolha seu supermercado', 'Para quantas pessoas você cozinha?', 'Em quais dias você vai cozinhar?', 'Qual é seu orçamento semanal?', 'Qual é seu objetivo?', 'Alguma restrição alimentar?', 'Quais equipamentos você usa para cozinhar?'];
   const subtitles = ['', 'Vamos deixar tudo com a sua cara.', 'Seu mercado favorito para planejar a semana.', 'Selecione o número de pessoas.', 'Escolha os dias das suas refeições planejadas.', 'Escolha quanto você quer investir nas refeições.', 'Escolha até 3 opções que combinam com você.', 'Selecione todas que se aplicam.', 'Selecione pelo menos um para o planejamento.'];
   return <View style={{ flex: 1, width: '100%', maxWidth: wide ? 660 : undefined, alignSelf: 'center', paddingVertical: wide ? 20 : 0 }}>
     <View style={[ui.row, { padding: 24 }]}>
@@ -107,7 +108,26 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
       <View style={{ flex: 1, justifyContent: step === 1 || step === 2 ? 'flex-start' : 'center', paddingVertical: 32, gap: 16 }}>
         {step === 1 && <TextInput accessibilityLabel="Seu nome" placeholder="Digite aqui" placeholderTextColor={c.muted} value={profile.name} onChangeText={name => { setMessage(''); updateProfile({ name }); }} autoCapitalize="words" maxLength={personNameMaxLength} returnKeyType="next" onSubmitEditing={() => valid && setStep(2)} style={{ backgroundColor: c.white, color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 18, fontSize: 20 }} />}
         {step === 1 && !!profile.name && !validName && !message && <Text accessibilityRole="alert" style={{ color: c.text }}>{personNameError}</Text>}
-        {step === 2 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{markets.length === 0 && <Text style={{ color: c.muted }}>Nenhum supermercado cadastrado. Você pode continuar.</Text>}{markets.map((market) => <View key={market} style={{ width: '30%', flexGrow: 1 }}><Pressable accessibilityRole="button" accessibilityLabel={market} onPress={() => updateProfile({ market })} style={{ alignItems: 'center', padding: 10, borderWidth: profile.market === market ? 2 : 1, borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}>{marketImages[market] ? <Image source={marketImages[market]} resizeMode="contain" style={{ width: 64, height: 44 }} /> : <Icon name="basket-outline" color={c.green} />}<Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text></Pressable></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Sua preferência fica salva neste dispositivo. O orçamento usa preços acadêmicos de referência.</Text></>}
+        {step === 2 && <>
+          {markets.length === 0 && <Text style={{ color: c.muted }}>Nenhum supermercado cadastrado. Você pode continuar.</Text>}
+          <View style={{ gap: 10 }}>
+            {markets.filter((_, index) => index % 2 === 0).map((first, row) => (
+              <View key={first} style={{ flexDirection: 'row', gap: 10 }}>
+                {markets.slice(row * 2, row * 2 + 2).map(market => (
+                  <Pressable key={market} accessibilityRole="button" accessibilityLabel={market}
+                    onPress={() => updateProfile({ market })}
+                    style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 10,
+                      borderWidth: profile.market === market ? 2 : 1,
+                      borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}>
+                    {marketImages[market] ? <Image source={marketImages[market]} resizeMode="contain" style={{ width: 64, height: 44 }} /> : <Icon name="basket-outline" color={c.green} />}
+                    <Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ))}
+          </View>
+          <Text style={{ color: c.muted, fontSize: 14 }}>Sua preferência fica salva neste dispositivo. O orçamento usa preços acadêmicos de referência.</Text>
+        </>}
         {step === 3 && <><View style={[ui.row, { justifyContent: 'center', gap: 35 }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Diminuir pessoas" disabled={profile.people <= 1} onPress={() => updateProfile({ people: profile.people - 1 })} style={{ padding: 12, backgroundColor: c.white, borderRadius: 30, opacity: profile.people <= 1 ? .35 : 1 }}><Icon name="remove" color={c.text} /></Pressable>
           <Text style={{ fontSize: 74, fontWeight: '800', color: c.text }}>{profile.people}</Text>
@@ -122,8 +142,8 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
         {step === 5 && <><Text style={{ fontSize: 58, fontWeight: '800', textAlign: 'center', color: c.text }}>{money(profile.budget)}</Text><Text style={{ textAlign: 'center', color: c.muted }}>de limite para as refeições selecionadas</Text><Slider accessibilityLabel="Orçamento semanal" minimumValue={30} maximumValue={750} step={5} value={profile.budget} onValueChange={budget => updateProfile({ budget })} minimumTrackTintColor={c.green} maximumTrackTintColor={c.border} thumbTintColor={c.green} style={{ width: '100%', height: 48 }} /><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: c.muted }}>R$ 30</Text><Text style={{ color: c.muted }}>R$ 750</Text></View></>}
         {step === 6 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{goalOptions.map(goal => <View key={goal.name} style={{ width: '46%', flexGrow: 1 }}><Chip title={goal.label ?? goal.name} emoji={goal.emoji} color={goal.color} selected={profile.goals.includes(goal.name)} onPress={() => toggle('goals', goal.name)} /></View>)}</View>}
         {step === 7 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Nenhuma', 'Vegetariano', 'Vegano', 'Peixe', 'Glúten'].map((restriction, i) => <View key={restriction} style={{ width: '46%', flexGrow: 1 }}><Chip title={restriction} emoji={['🍽️','🥕','🥬','🐟','🌾'][i]} selected={restriction === 'Nenhuma' ? !profile.restrictions.length : profile.restrictions.includes(restriction)} onPress={() => toggle('restrictions', restriction)} /></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Confira sempre os rótulos dos produtos em caso de alergias.</Text></>}
-        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{appliances.map((appliance, i) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={appliance} emoji={['🍳','♨️','🥘','🍞'][i]} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>{alternativeAppliances.length
-          ? `Selecione um equipamento com receitas compatíveis: ${alternativeAppliances.join(', ')}.`
+        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{appliances.map((appliance) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={applianceLabel(appliance)} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>{alternativeAppliances.length
+          ? `Selecione um equipamento com receitas compatíveis: ${alternativeAppliances.map(applianceLabel).join(', ')}.`
           : 'Nenhuma receita combina com o tipo de refeição e as restrições selecionadas. Volte para ajustar suas escolhas.'}</Text>}</>}
       </View>
     </ScrollView>

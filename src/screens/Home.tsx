@@ -66,7 +66,7 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
       <View style={{ flex: 1, gap: 4 }}><Text style={{ color: c.text, fontWeight: '800', fontSize: 19 }}>Lista de compras</Text><Text style={{ color: c.muted, fontSize: 14 }}>{checked} de {list.length} itens marcados</Text></View>
       <Icon name="arrow-forward" color={c.green} size={22}/>
     </Pressable>
-    {!!session && !!active && <PlanReviewCard key={active.id} userId={session.user.id} planningId={active.id} />}
+    {!!session && !!active && <PlanReviewCard key={active.id} userId={session.user.id} planningId={active.id} eligibleRecipeIds={[...compatibleIds]} />}
     <View style={{ gap: 15 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ gap: 4 }}><Text accessibilityRole="header" style={{ color: c.text, fontSize: 25, fontWeight: '800', letterSpacing: -.6 }}>Seu cardápio</Text><Text style={{ color: c.muted, fontSize: 15 }}>{distinctMeals} {distinctMeals === 1 ? 'receita diferente' : 'receitas diferentes'}</Text></View>

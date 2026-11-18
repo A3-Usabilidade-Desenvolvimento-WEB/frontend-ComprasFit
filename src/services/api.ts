@@ -42,7 +42,7 @@ export interface Expiration {
   id: string; name: string; productId: string | null; expirationDate: string;
   daysLeft: number; status: 'expired' | 'expiring_soon' | 'ok'; registeredAt: string;
 }
-export type PlanReview = { source: "gemini" | "rules"; tips: string[] };
+export type PlanReview = { source: "gemini" | "rules"; tips: string[]; sections?: { title: string; detail: string }[] };
 
 export interface Suggestions {
   source: 'catalog';
@@ -104,7 +104,8 @@ export const api = {
   create: (user: string, input: PlanningInput) => request<Planning>('/planejamento', user, 'POST', input),
   purchase: (user: string, id: string, item: ShoppingItem) => request<ShoppingItem>(
     planPath(id) + '/itens/' + encodeURIComponent(item.id), user, 'PATCH', { purchased: !item.purchased }),
-  review: (user: string, planningId: string) => request<PlanReview>('/ia/revisao', user, 'POST', { planningId }),
+  review: (user: string, planningId: string, eligibleRecipeIds: string[]) =>
+    request<PlanReview>('/ia/revisao', user, 'POST', { planningId, eligibleRecipeIds }),
   suggestions: (user: string, planningId: string, offset: number, eligibleRecipeIds: string[]) =>
     request<Suggestions>('/ia/sugestao', user, 'POST', { planningId, offset, eligibleRecipeIds }),
   expirations: (user: string) => request<Expiration[]>('/validade', user),
