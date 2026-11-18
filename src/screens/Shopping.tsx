@@ -26,6 +26,9 @@ export function Shopping() {
     <View style={{ alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 13, letterSpacing: 2, color: c.muted }}>ESTA SEMANA</Text>
       <Text accessibilityRole="header" style={{ fontSize: 28, fontWeight: '800', color: c.text }}>Lista de compras</Text>
+      {!!active && <Text style={{ textAlign: 'center', color: c.muted, lineHeight: 20 }}>
+        {money(active.total)} estimados para {active.meals.length} refeições. Valores de referência acadêmicos.
+      </Text>}
       <Text style={{ backgroundColor: '#DFEBD9', color: '#32643C', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>{count}/{items.length} itens comprados</Text>
     </View>
     <Pressable accessibilityRole="button" onPress={share} style={[ui.row, { justifyContent: 'center', padding: 14, backgroundColor: c.white, borderRadius: 12, borderWidth: 1, borderColor: c.border }]}><Icon name="share-outline" color={c.text} /><Text style={{ color: c.text, fontWeight: '600' }}>Compartilhar lista</Text></Pressable>

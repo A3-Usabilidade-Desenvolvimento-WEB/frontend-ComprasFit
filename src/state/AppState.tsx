@@ -55,13 +55,14 @@ function useStore(session: Session | null, ready: boolean) {
       if (!current) return;
       let saved = defaults;
       try { saved = raw ? readLocal(raw) : { ...defaults, preferences: readLocal(legacy).preferences }; } catch (error) { setStorageError(errorText(error)); }
-      const profile = { ...saved.profile, name: normalizePersonName(saved.profile.name) ?? normalizePersonName(session?.user.user_metadata.name) ?? '',
+      const profile = { ...defaultProfile, ...saved.profile, name: normalizePersonName(saved.profile.name) ?? normalizePersonName(session?.user.user_metadata.name) ?? '',
         market: stores.includes(saved.profile.market) ? saved.profile.market : stores[0] ?? '' };
       if (plan) {
         if (plan.params.requireProteinMain !== undefined) {
           profile.goals = profile.goals.filter(goal => goal !== proteinGoal);
           if (plan.params.requireProteinMain) profile.goals.push(proteinGoal);
         }
+        profile.coverage = plan.params.mealKind === "snack" ? "snack" : plan.params.mealsPerDay >= 2 ? "lunch-dinner" : "dinner";
         profile.people = plan.params.people;
         profile.budget = plan.budget;
         profile.days = plan.params.dayLabels ?? weekdays.slice(0, plan.params.periodDays);
@@ -118,7 +119,10 @@ function useStore(session: Session | null, ready: boolean) {
 
   const plan = active?.meals.map(meal => {
     const label = active.params.dayLabels?.[meal.day - 1] || 'Dia ' + meal.day;
-    return { recipeId: meal.recipeId, day: active.params.mealsPerDay > 1 ? label + ' · ' + meal.slot : label };
+    const { mealKind, mealsPerDay } = active.params;
+    const mealLabel = mealsPerDay === 2 && mealKind === 'main' ? (meal.slot === 1 ? 'Almoço' : 'Jantar')
+      : mealsPerDay > 1 ? String(meal.slot) : undefined;
+    return { recipeId: meal.recipeId, day: mealLabel ? label + ' · ' + mealLabel : label };
   }) ?? [];
 
   return {

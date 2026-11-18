@@ -3,12 +3,12 @@ import { test } from 'node:test';
 import type { Recipe } from '../services/api';
 import { defaultProfile, eligibleRecipes, planningInput } from './planner';
 
-const recipe: Recipe = { id: 'r1', hasProteinMain: true, name: 'Lentilha', servings: 2, vegetarian: true, steps: [], ingredients: [],
+const recipe: Recipe = { id: 'r1', mealKind: 'main', hasProteinMain: true, name: 'Lentilha', servings: 2, vegetarian: true, steps: [], ingredients: [],
   preferences: { appliances: ['Fogão'], restrictions: ['Vegetariano', 'Vegano'], goals: ['Refeição leve'] } };
 test('maps a weekly dinner to ordered labels and the API contract', () => {
   const profile = { ...defaultProfile, restrictions: ['Vegano'], days: ['Domingo', 'Terça-feira'] };
   assert.deepEqual(planningInput(profile, [recipe]), { budget: 135, people: 1, periodDays: 2,
-    mealsPerDay: 1, buyingPreference: 'lowest_price', vegetarian: true, requireProteinMain: false, recipeIds: ['r1'], dayLabels: ['Terça-feira', 'Domingo'] });
+    mealsPerDay: 2, mealKind: 'main', buyingPreference: 'variety', vegetarian: true, requireProteinMain: false, recipeIds: ['r1'], dayLabels: ['Terça-feira', 'Domingo'] });
 });
 test('requires every restriction and a compatible appliance', () => {
   assert.deepEqual(eligibleRecipes({ ...defaultProfile, restrictions: ['Vegano','Glúten'] }, [recipe]), []);
@@ -17,13 +17,13 @@ test('requires every restriction and a compatible appliance', () => {
 test('goals prioritize compatible recipes from the server', () => {
   const other = { ...recipe, id: 'r2', preferences: { ...recipe.preferences, goals: ['Diferente'] } };
   const params = planningInput({ ...defaultProfile, goals: ['Diferente'] }, [recipe, other]);
-  assert.deepEqual(params.recipeIds, ['r2']);
+  assert.deepEqual(params.recipeIds, ['r2', 'r1']);
   assert.equal(params.buyingPreference, 'variety');
 });
 
 test('a meta de proteína é obrigatória inclusive com outro objetivo ou sem candidatos', () => {
   const goal = 'Rico em proteína';
-  const side: Recipe = { ...recipe, id: 'batata-cenoura', hasProteinMain: false,
+  const side: Recipe = { ...recipe, id: 'batata-cenoura', mealKind: 'side', hasProteinMain: false,
     preferences: { ...recipe.preferences, goals: ['Refeição leve', goal] } };
   const chicken: Recipe = { ...recipe, id: 'frango', vegetarian: false,
     preferences: { ...recipe.preferences, restrictions: [], goals: [] } };
@@ -32,5 +32,16 @@ test('a meta de proteína é obrigatória inclusive com outro objetivo ou sem ca
   assert.deepEqual(planningInput(profile, [side, chicken, recipe]).recipeIds, ['r1']);
   assert.equal(planningInput(profile, [recipe]).requireProteinMain, true);
   assert.throws(() => planningInput(profile, [side, chicken]), /Nenhuma receita/);
-  assert.deepEqual(eligibleRecipes(defaultProfile, [side]), [side]);
+  assert.deepEqual(eligibleRecipes(defaultProfile, [side]), []);
+});
+
+test('separa jantares de lanches e exclui acompanhamentos das duas opções', () => {
+  const snack: Recipe = { ...recipe, id: 'bolo', mealKind: 'snack', hasProteinMain: false };
+  const side: Recipe = { ...recipe, id: 'batata', mealKind: 'side', hasProteinMain: false };
+  const catalog = [side, snack, recipe];
+  assert.deepEqual(planningInput({ ...defaultProfile, coverage: 'dinner' }, catalog).recipeIds, ['r1']);
+  const plan = planningInput({ ...defaultProfile, coverage: 'snack' }, catalog);
+  assert.equal(plan.mealsPerDay, 1);
+  assert.equal(plan.mealKind, 'snack');
+  assert.deepEqual(plan.recipeIds, ['bolo']);
 });
