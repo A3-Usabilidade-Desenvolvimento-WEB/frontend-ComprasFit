@@ -8,6 +8,7 @@ import { eligibleRecipes, money } from '../data/planner';
 import type { Profile } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
+import { normalizePersonName, personNameError, personNameMaxLength } from '../data/personName';
 
 
 export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 1, welcomeOnly = false, onStart }: { onFinish: () => void; editing?: boolean; onCancel?: () => void; initialStep?: number; welcomeOnly?: boolean; onStart?: () => void }) {
@@ -25,11 +26,17 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
     if (key === 'restrictions') next = value === 'Nenhuma' ? [] : next;
     updateProfile({ [key]: next });
   };
-  const valid = step === 1 ? !!profile.name.trim() : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile, recipes).length > 0 : true;
+  const validName = normalizePersonName(profile.name);
+  const valid = step === 1 ? validName !== null : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile, recipes).length > 0 : true;
   const finish = async () => {
     if (generating) return;
+    if (!validName) {
+      setStep(1);
+      setMessage(personNameError);
+      return;
+    }
     setGenerating(true); setMessage('');
-    try { await generate({ ...profile, name: profile.name.trim() }); onFinish(); }
+    try { await generate({ ...profile, name: validName }); onFinish(); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Falha ao gerar o planejamento.'); }
     finally { setGenerating(false); }
   };
@@ -89,7 +96,8 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 26, paddingBottom: 24, flexGrow: 1 }}>
       <Heading title={titles[step]!} subtitle={subtitles[step]} />
       <View style={{ flex: 1, justifyContent: step === 1 || step === 2 ? 'flex-start' : 'center', paddingVertical: 32, gap: 16 }}>
-        {step === 1 && <TextInput accessibilityLabel="Seu nome" placeholder="Digite aqui" placeholderTextColor={c.muted} value={profile.name} onChangeText={name => updateProfile({ name })} autoCapitalize="words" maxLength={50} returnKeyType="next" onSubmitEditing={() => valid && setStep(2)} style={{ backgroundColor: c.white, color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 18, fontSize: 20 }} />}
+        {step === 1 && <TextInput accessibilityLabel="Seu nome" placeholder="Digite aqui" placeholderTextColor={c.muted} value={profile.name} onChangeText={name => { setMessage(''); updateProfile({ name }); }} autoCapitalize="words" maxLength={personNameMaxLength} returnKeyType="next" onSubmitEditing={() => valid && setStep(2)} style={{ backgroundColor: c.white, color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 18, fontSize: 20 }} />}
+        {step === 1 && !!profile.name && !validName && !message && <Text accessibilityRole="alert" style={{ color: c.text }}>{personNameError}</Text>}
         {step === 2 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{markets.length === 0 && <Text style={{ color: c.muted }}>Nenhum supermercado cadastrado. Você pode continuar.</Text>}{markets.map((market) => <View key={market} style={{ width: '30%', flexGrow: 1 }}><Pressable accessibilityRole="button" accessibilityLabel={market} onPress={() => updateProfile({ market })} style={{ alignItems: 'center', padding: 10, borderWidth: profile.market === market ? 2 : 1, borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}>{marketImages[market] ? <Image source={marketImages[market]} resizeMode="contain" style={{ width: 64, height: 44 }} /> : <Icon name="basket-outline" color={c.green} />}<Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text></Pressable></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Sua preferência fica salva neste dispositivo. O orçamento usa preços acadêmicos de referência.</Text></>}
         {step === 3 && <><View style={[ui.row, { justifyContent: 'center', gap: 35 }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Diminuir pessoas" disabled={profile.people <= 1} onPress={() => updateProfile({ people: profile.people - 1 })} style={{ padding: 12, backgroundColor: c.white, borderRadius: 30, opacity: profile.people <= 1 ? .35 : 1 }}><Icon name="remove" color={c.text} /></Pressable>

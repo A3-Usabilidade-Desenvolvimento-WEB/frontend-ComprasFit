@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { AppState, Platform } from 'react-native';
 import { defaultProfile, eligibleRecipes, planningInput, type Profile } from '../data/planner';
 import { weekdays } from '../data/recipes';
+import { normalizePersonName, personNameError } from '../data/personName';
 import { api, errorText, type Planning, type Recipe, type Suggestions } from '../services/api';
 import { auth } from '../services/auth';
 
@@ -54,7 +55,7 @@ function useStore(session: Session | null, ready: boolean) {
       if (!current) return;
       let saved = defaults;
       try { saved = raw ? readLocal(raw) : { ...defaults, preferences: readLocal(legacy).preferences }; } catch (error) { setStorageError(errorText(error)); }
-      const profile = { ...saved.profile, name: saved.profile.name || session?.user.user_metadata.name || '',
+      const profile = { ...saved.profile, name: normalizePersonName(saved.profile.name) ?? normalizePersonName(session?.user.user_metadata.name) ?? '',
         market: stores.includes(saved.profile.market) ? saved.profile.market : stores[0] ?? '' };
       if (plan) {
         profile.people = plan.params.people;
@@ -124,7 +125,11 @@ function useStore(session: Session | null, ready: boolean) {
     updateProfile: (patch: Partial<Profile>) => setLocal(s => ({ ...s, profile: { ...s.profile, ...patch } })),
     updatePreferences: (patch: Partial<Preferences>) => setLocal(s => ({ ...s, preferences: { ...s.preferences, ...patch } })),
     toggleFavorite: (id: string) => setLocal(s => ({ ...s, favorites: s.favorites.includes(id) ? s.favorites.filter(f => f !== id) : [...s.favorites, id] })),
-    generate: (profile: Profile) => savePlan(profile, planningInput(profile, recipes)),
+    generate: async (profile: Profile) => {
+      const name = normalizePersonName(profile.name);
+      if (!name) throw new Error(personNameError);
+      await savePlan({ ...profile, name }, planningInput(profile, recipes));
+    },
     swap: async (day: string, id: string) => {
       if (!active) return;
       const mealRecipeIds = plan.map(entry => entry.day === day ? id : entry.recipeId);
