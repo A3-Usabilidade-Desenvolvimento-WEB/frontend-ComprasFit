@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { defaultProfile, eligibleRecipes, planningInput, type Profile } from '../data/planner';
-import { weekdays } from '../data/recipes';
+import { proteinGoal, weekdays } from '../data/recipes';
 import { normalizePersonName, personNameError } from '../data/personName';
 import { api, errorText, type Planning, type Recipe, type Suggestions } from '../services/api';
 import { auth } from '../services/auth';
@@ -58,6 +58,10 @@ function useStore(session: Session | null, ready: boolean) {
       const profile = { ...saved.profile, name: normalizePersonName(saved.profile.name) ?? normalizePersonName(session?.user.user_metadata.name) ?? '',
         market: stores.includes(saved.profile.market) ? saved.profile.market : stores[0] ?? '' };
       if (plan) {
+        if (plan.params.requireProteinMain !== undefined) {
+          profile.goals = profile.goals.filter(goal => goal !== proteinGoal);
+          if (plan.params.requireProteinMain) profile.goals.push(proteinGoal);
+        }
         profile.people = plan.params.people;
         profile.budget = plan.budget;
         profile.days = plan.params.dayLabels ?? weekdays.slice(0, plan.params.periodDays);
@@ -132,8 +136,17 @@ function useStore(session: Session | null, ready: boolean) {
     },
     swap: async (day: string, id: string) => {
       if (!active) return;
+      if (!eligibleRecipes(local.profile, recipes).some(recipe => recipe.id === id)) {
+        throw new Error('Esta refeição não atende ao objetivo, às restrições ou aos equipamentos selecionados.');
+      }
       const mealRecipeIds = plan.map(entry => entry.day === day ? id : entry.recipeId);
-      await savePlan(local.profile, { ...active.params, mealRecipeIds, recipeIds: [...new Set(mealRecipeIds)] });
+      // Planos antigos podem ser corrigidos uma refeição por vez.
+      const upgraded = active.params.requireProteinMain === undefined && local.profile.goals.includes(proteinGoal)
+        && mealRecipeIds.every(mealId => recipes.some(recipe => recipe.id === mealId && recipe.hasProteinMain));
+      await savePlan(local.profile, {
+        ...active.params, ...(upgraded ? { requireProteinMain: true } : {}),
+        mealRecipeIds, recipeIds: [...new Set(mealRecipeIds)],
+      });
     },
     toggleChecked: async (id: string) => {
       const item = active?.shoppingList.items.find(i => i.id === id);

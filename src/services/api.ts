@@ -2,19 +2,23 @@ import { requireAuth } from './auth';
 
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://backend-compras-fit.vercel.app').replace(/\/+$/, '');
 type Unit = 'g' | 'ml' | 'un';
+type FoodRole = "Proteína vegetal" | "Proteína animal" | "Carboidrato" | "Hortaliça" | "Laticínio" | "Fruta" | "Molho" | "Gordura";
 export interface Product {
+  foodRole: FoodRole | null;
   id: string; name: string; category: string; unit: Unit; packageSize: number;
   price: { value: number; store: string; updatedAt: string } | null;
 }
 export interface Recipe {
+  hasProteinMain: boolean;
   id: string; name: string; servings: number; vegetarian: boolean; steps: string[];
   preparationMinutes?: number | null;
   preferences: { restrictions: string[]; appliances: string[]; goals: string[] };
-  ingredients: { productId: string; name: string; quantity: number; unit: Unit | null }[];
+  ingredients: { foodRole: FoodRole | null; mainProtein: boolean; productId: string; name: string; quantity: number; unit: Unit | null }[];
 }
 export interface PlanningInput {
   budget: number; people: number; periodDays: number; mealsPerDay: number;
   buyingPreference: 'lowest_price' | 'variety'; vegetarian: boolean;
+  requireProteinMain?: boolean;
   recipeIds?: string[]; mealRecipeIds?: string[]; dayLabels?: string[];
 }
 export interface ShoppingItem {
