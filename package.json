@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/data/planner.test.ts src/data/personName.test.ts",
+    "test": "tsx --test src/data/planner.test.ts src/data/personName.test.ts src/data/images.test.ts",
     "export": "expo export",
     "build:web": "expo export --platform web"
   },

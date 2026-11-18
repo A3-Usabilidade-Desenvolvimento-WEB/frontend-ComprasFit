@@ -2,51 +2,118 @@ import type { ImageSourcePropType } from 'react-native';
 
 type RecipePhoto = {
   source: ImageSourcePropType;
-  credit?: { author: string; url: string };
-};
-
-const photos: Record<string, RecipePhoto> = {
-  'arroz-feijao': { source: require('../../assets/recipes/arroz-feijao.jpg'), credit: { author: "ViajantenoPlanetaTerra", url: 'https://commons.wikimedia.org/wiki/File:Arroz_e_feij%C3%A3o.jpg' } },
-  'arroz-feijao-frango': { source: require('../../assets/recipes/arroz-feijao-frango.jpg'), credit: { author: "Tet", url: 'https://commons.wikimedia.org/wiki/File:Prato_com_arroz_e_feij%C3%A3o%2C_frango_grelhado%2C_batata_frita%2C_salada_e_ovo_frito_como_adicionais.jpg' } },
-  'omelete': { source: require('../../assets/recipes/omelete.jpg'), credit: { author: "Renee Comet e National Cancer Institute", url: 'https://commons.wikimedia.org/wiki/File:Eggs_omelette.jpg' } },
-  'omelete-legumes': { source: require('../../assets/recipes/omelete-legumes.jpg'), credit: { author: "JacquesDemien", url: 'https://commons.wikimedia.org/wiki/File:An_omelette.jpg' } },
-  'lentilha': { source: require('../../assets/recipes/lentilha.jpg'), credit: { author: "Zantastik", url: 'https://commons.wikimedia.org/wiki/File:Rago%C3%BBt_aux_lentilles.jpg' } },
-  'sopa-lentilha': { source: require('../../assets/recipes/sopa-lentilha.jpg'), credit: { author: "Emna Mizouni", url: 'https://commons.wikimedia.org/wiki/File:Lentil_soup_from_Sicily.jpg' } },
-  'aveia-banana': { source: require('../../assets/recipes/aveia-banana.jpg'), credit: { author: "Ella Olsson", url: 'https://commons.wikimedia.org/wiki/File:Banana_Oatmeal_Breakfast_Bowl_(44302857265).jpg' } },
-  'batata-rustica': { source: require('../../assets/recipes/batata-rustica.jpg'), credit: { author: "Kurtkaiser", url: 'https://commons.wikimedia.org/wiki/File:Sweet_Potato_Fries_3.jpg' } },
-  'ovos-tomate': { source: require('../../assets/recipes/ovos-tomate.jpg'), credit: { author: "Junbinhuang", url: 'https://commons.wikimedia.org/wiki/File:Shakshuka_Dish.jpg' } },
-  'panqueca-banana': { source: require('../../assets/recipes/panqueca-banana.jpg'), credit: { author: "FitTasteTic", url: 'https://commons.wikimedia.org/wiki/File:Healthy_Banana_Pancakes.jpg' } },
-  'bolo-banana': { source: require('../../assets/recipes/bolo-banana.jpg'), credit: { author: "Shisma", url: 'https://commons.wikimedia.org/wiki/File:Banana_bread_cut_into_slices.jpg' } },
-  'aveia': { source: require('../../assets/recipes/aveia.jpg'), credit: { author: "Tiia Monto", url: 'https://commons.wikimedia.org/wiki/File:Porridge_2.jpg' } },
-  'batata-brocolis': { source: require('../../assets/recipes/batata-brocolis.jpg'), credit: { author: "Karen and Brad Emerson", url: 'https://commons.wikimedia.org/wiki/File:Sesame-roasted_sweet_potato_wedges_with_Brocolli_(3257806891).jpg' } },
-  'macarrao-tomate': { source: require('../../assets/recipes/macarrao-tomate.jpg'), credit: { author: "Benreis", url: 'https://commons.wikimedia.org/wiki/File:Spaghetti_al_Pomodoro.JPG' } },
-  'macarrao-brocolis': { source: require('../../assets/recipes/macarrao-brocolis.jpg'), credit: { author: "Yknott", url: 'https://commons.wikimedia.org/wiki/File:Pasta%2Bbroccoli.jpg' } },
-  'frango-grelhado': { source: require('../../assets/recipes/frango-grelhado.jpg'), credit: { author: "FarhanTahir90", url: 'https://commons.wikimedia.org/wiki/File:Chiken_Steaks_in_Pakistan.jpg' } },
+  credit: { author: string; url: string } | null;
 };
 
 export const recipePhotos: Partial<Record<string, RecipePhoto>> = {
-  'arroz-com-feijao': photos['arroz-feijao'],
-  'arroz-feijao-frango': photos['arroz-feijao-frango'],
-  'frango-brocolis-arroz': { source: require('../../assets/arroz.jpg') },
-  'frango-grelhado': photos['frango-grelhado'],
-  'omelete-simples': photos['omelete'],
-  'omelete-brocolis': photos['omelete-legumes'],
-  'omelete-arroz-legumes': photos['omelete-legumes'],
-  'ovos-tomate': photos['ovos-tomate'],
-  'macarrao-molho-tomate': photos['macarrao-tomate'],
-  'macarrao-brocolis': photos['macarrao-brocolis'],
-  'macarrao-lentilha': photos['macarrao-tomate'],
-  'lentilha-tomate': photos['lentilha'],
-  'lentilha-arroz-cenoura': photos['lentilha'],
-  'lentilha-batata-doce': photos['sopa-lentilha'],
-  'mingau-aveia-banana': photos['aveia-banana'],
-  'mingau-microondas': photos['aveia-banana'],
-  'mingau-de-aveia': photos['aveia'],
-  'batata-doce-airfryer': photos['batata-rustica'],
-  'batata-doce-forno': photos['batata-brocolis'],
-  'brocolis-airfryer': photos['batata-brocolis'],
-  'panqueca-banana-aveia': photos['panqueca-banana'],
-  'bolo-banana-aveia': photos['bolo-banana'],
+  'arroz-carreteiro': {
+    source: require('../../assets/recipes/arroz-carreteiro.jpg'),
+    credit: null,
+  },
+  'arroz-com-feijao': {
+    source: require('../../assets/recipes/arroz-com-feijao.jpg'),
+    credit: null,
+  },
+  'arroz-cremoso-brocolis': {
+    source: require('../../assets/recipes/arroz-cremoso-brocolis.jpg'),
+    credit: null,
+  },
+  'arroz-feijao-frango': {
+    source: require('../../assets/recipes/arroz-feijao-frango.jpg'),
+    credit: null,
+  },
+  'batata-doce-airfryer': {
+    source: require('../../assets/recipes/batata-doce-airfryer.jpg'),
+    credit: { author: 'Kurtkaiser', url: 'https://commons.wikimedia.org/wiki/File:Sweet_Potato_Fries_3.jpg' },
+  },
+  'batata-doce-forno': {
+    source: require('../../assets/recipes/batata-doce-forno.jpg'),
+    credit: null,
+  },
+  'batata-doce-microondas': {
+    source: require('../../assets/recipes/batata-doce-microondas.jpg'),
+    credit: null,
+  },
+  'bolo-banana-aveia': {
+    source: require('../../assets/recipes/bolo-banana-aveia.jpg'),
+    credit: null,
+  },
+  'brocolis-airfryer': {
+    source: require('../../assets/recipes/brocolis-airfryer.jpg'),
+    credit: null,
+  },
+  'carne-moida-batata-doce': {
+    source: require('../../assets/recipes/carne-moida-batata-doce.jpg'),
+    credit: null,
+  },
+  'feijao-cenoura': {
+    source: require('../../assets/recipes/feijao-cenoura.jpg'),
+    credit: null,
+  },
+  'frango-brocolis-arroz': {
+    source: require('../../assets/recipes/frango-brocolis-arroz.jpg'),
+    credit: null,
+  },
+  'frango-grelhado': {
+    source: require('../../assets/recipes/frango-grelhado.jpg'),
+    credit: null,
+  },
+  'lentilha-arroz-cenoura': {
+    source: require('../../assets/recipes/lentilha-arroz-cenoura.jpg'),
+    credit: null,
+  },
+  'lentilha-batata-doce': {
+    source: require('../../assets/recipes/lentilha-batata-doce.jpg'),
+    credit: null,
+  },
+  'lentilha-tomate': {
+    source: require('../../assets/recipes/lentilha-tomate.jpg'),
+    credit: null,
+  },
+  'macarrao-brocolis': {
+    source: require('../../assets/recipes/macarrao-brocolis.jpg'),
+    credit: { author: 'Yknott', url: 'https://commons.wikimedia.org/wiki/File:Pasta%2Bbroccoli.jpg' },
+  },
+  'macarrao-lentilha': {
+    source: require('../../assets/recipes/macarrao-lentilha.jpg'),
+    credit: null,
+  },
+  'macarrao-molho-tomate': {
+    source: require('../../assets/recipes/macarrao-molho-tomate.jpg'),
+    credit: { author: 'Roberto De Martino', url: 'https://commons.wikimedia.org/wiki/File:Spaghettata.JPG' },
+  },
+  'mingau-aveia-banana': {
+    source: require('../../assets/recipes/mingau-aveia-banana.jpg'),
+    credit: null,
+  },
+  'mingau-de-aveia': {
+    source: require('../../assets/recipes/mingau-de-aveia.jpg'),
+    credit: { author: 'Bodhi Peace', url: 'https://commons.wikimedia.org/wiki/File:Cooked_oatmeal_in_bowl.jpg' },
+  },
+  'mingau-microondas': {
+    source: require('../../assets/recipes/mingau-microondas.jpg'),
+    credit: null,
+  },
+  'omelete-arroz-legumes': {
+    source: require('../../assets/recipes/omelete-arroz-legumes.jpg'),
+    credit: null,
+  },
+  'omelete-brocolis': {
+    source: require('../../assets/recipes/omelete-brocolis.jpg'),
+    credit: null,
+  },
+  'omelete-simples': {
+    source: require('../../assets/recipes/omelete-simples.jpg'),
+    credit: { author: 'Renee Comet e National Cancer Institute', url: 'https://commons.wikimedia.org/wiki/File:Eggs_omelette.jpg' },
+  },
+  'ovos-tomate': {
+    source: require('../../assets/recipes/ovos-tomate.jpg'),
+    credit: { author: 'Junbinhuang', url: 'https://commons.wikimedia.org/wiki/File:Shakshuka_Dish.jpg' },
+  },
+  'panqueca-banana-aveia': {
+    source: require('../../assets/recipes/panqueca-banana-aveia.jpg'),
+    credit: { author: 'PallaviKhale', url: 'https://commons.wikimedia.org/wiki/File:Banana_Pancakes_Pk021.jpg' },
+  },
 };
 
 export const marketImages: Record<string, ImageSourcePropType> = {
