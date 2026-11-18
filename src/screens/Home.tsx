@@ -36,7 +36,7 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
         <Text style={{ color: '#C7EBD8', fontSize: 15, fontWeight: '600' }}>Estimativa da lista de compras</Text>
         <Icon name="wallet-outline" color="#D7F3E4" size={23}/>
       </View>
-      <View style={{ gap: 4 }}><Text style={{ color: '#FFFFFF', fontSize: 35, fontWeight: '800', letterSpacing: -1 }}>{money(total)}</Text><Text style={{ color: '#C7EBD8', fontSize: 15 }}>de {money((active?.budget ?? state.profile.budget))} de limite</Text></View>
+      <View style={{ gap: 4 }}><Text style={{ color: '#FFFFFF', fontSize: 35, fontWeight: '800', letterSpacing: -1 }}>{money(total)}</Text><Text style={{ color: '#C7EBD8', fontSize: 15 }}>Limite de {money(active?.budget ?? state.profile.budget)}</Text></View>
       <View style={{ height: 8, borderRadius: 8, backgroundColor: '#478B70', overflow: 'hidden' }}><View style={{ height: '100%', width: `${percent}%`, borderRadius: 8, backgroundColor: total > (active?.budget ?? state.profile.budget) ? '#FFC77B' : '#B6F0CF' }}/></View>
       <Text style={{ color: '#DDF4E6', fontSize: 14 }}>{meals} refeições em {days} dias · {people} {people === 1 ? 'pessoa' : 'pessoas'}</Text>
       <Text style={{ color: '#DDF4E6', fontSize: 13, lineHeight: 19 }}>Inclui as embalagens para estas receitas. Os preços são referências acadêmicas e podem diferir dos preços do supermercado.</Text>
