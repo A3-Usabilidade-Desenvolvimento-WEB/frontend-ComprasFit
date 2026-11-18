@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { AppState, Platform } from 'react-native';
 import { defaultProfile, planningInput, type Profile } from '../data/planner';
 import { weekdays } from '../data/recipes';
-import { api, errorText, type Planning, type Recipe, type Product } from '../services/api';
+import { api, errorText, type Planning, type Recipe } from '../services/api';
 import { auth } from '../services/auth';
 
 type Preferences = { dark: boolean; reminders: boolean; weekStart: 'Segunda-feira' | 'Domingo'; language?: 'pt-BR' | 'en' | 'es' };
@@ -26,7 +26,7 @@ function useStore(session: Session | null, ready: boolean) {
   const [local, setLocal] = useState<LocalState>(defaults);
   const [active, setActive] = useState<Planning | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [markets, setMarkets] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [storageError, setStorageError] = useState('');
@@ -41,8 +41,8 @@ function useStore(session: Session | null, ready: boolean) {
     setLoaded(false);
     setLoadError('');
     async function restore(owner: string) {
-      const [raw, catalog, products, history] = await Promise.all([
-        AsyncStorage.getItem(key), api.recipes(), api.products(), api.history(owner),
+      const [raw, catalog, stores, history] = await Promise.all([
+        AsyncStorage.getItem(key), api.recipes(), api.stores(), api.history(owner),
       ]);
       // Version 1 had no account owner. Only device appearance can be safely reused.
       const legacy = raw ? null : await AsyncStorage.getItem('comprasfit:v1');
@@ -51,7 +51,7 @@ function useStore(session: Session | null, ready: boolean) {
       let saved = defaults;
       try { saved = raw ? readLocal(raw) : { ...defaults, preferences: readLocal(legacy).preferences }; } catch (error) { setStorageError(errorText(error)); }
       const profile = { ...saved.profile, name: saved.profile.name || session?.user.user_metadata.name || '',
-        market: saved.profile.market || products.find(p => p.price?.store)?.price?.store || '' };
+        market: stores.includes(saved.profile.market) ? saved.profile.market : stores[0] ?? '' };
       if (plan) {
         profile.people = plan.params.people;
         profile.budget = plan.budget;
@@ -62,7 +62,7 @@ function useStore(session: Session | null, ready: boolean) {
       }
       setLocal({ ...saved, profile });
       setRecipes(catalog);
-      setProducts(products);
+      setMarkets(stores);
       setActive(plan);
       setLoaded(true);
     }
@@ -91,7 +91,7 @@ function useStore(session: Session | null, ready: boolean) {
   }) ?? [];
 
   return {
-    session, recipes, products, active, loaded: ready && (!userId || loaded), storageError, loadError,
+    session, recipes, markets, active, loaded: ready && (!userId || loaded), storageError, loadError,
     retry: () => setAttempt(n => n + 1),
     state: { ...local, plan, completed: !!active },
     updateProfile: (patch: Partial<Profile>) => setLocal(s => ({ ...s, profile: { ...s.profile, ...patch } })),

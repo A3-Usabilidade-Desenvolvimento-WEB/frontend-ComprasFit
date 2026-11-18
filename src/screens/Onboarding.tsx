@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Button, Chip, Heading, Icon, ui, useTheme } from '../components/ui';
+import { marketImages } from '../data/images';
 import { goalOptions, weekdays } from '../data/recipes';
 import { eligibleRecipes, money } from '../data/planner';
 import type { Profile } from '../data/planner';
@@ -11,11 +12,10 @@ import { useApp } from '../state/AppState';
 
 export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 1, welcomeOnly = false, onStart }: { onFinish: () => void; editing?: boolean; onCancel?: () => void; initialStep?: number; welcomeOnly?: boolean; onStart?: () => void }) {
   const [step, setStep] = useState(welcomeOnly ? 0 : initialStep);
-  const { state, generate, recipes, products } = useApp();
+  const { state, generate, recipes, markets } = useApp();
   const [profile, setProfile] = useState(state.profile);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState('');
-  const markets = [...new Set(products.map(p => p.price?.store).filter((s): s is string => !!s))];
   const updateProfile = (patch: Partial<Profile>) => setProfile(current => ({ ...current, ...patch }));
   const c = useTheme();
   const { wide } = useResponsive();
@@ -90,7 +90,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
       <Heading title={titles[step]!} subtitle={subtitles[step]} />
       <View style={{ flex: 1, justifyContent: step === 1 || step === 2 ? 'flex-start' : 'center', paddingVertical: 32, gap: 16 }}>
         {step === 1 && <TextInput accessibilityLabel="Seu nome" placeholder="Digite aqui" placeholderTextColor={c.muted} value={profile.name} onChangeText={name => updateProfile({ name })} autoCapitalize="words" maxLength={50} returnKeyType="next" onSubmitEditing={() => valid && setStep(2)} style={{ backgroundColor: c.white, color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 18, fontSize: 20 }} />}
-        {step === 2 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{markets.map((market) => <View key={market} style={{ width: '30%', flexGrow: 1 }}><Pressable accessibilityRole="button" accessibilityLabel={market} onPress={() => updateProfile({ market })} style={{ alignItems: 'center', padding: 10, borderWidth: profile.market === market ? 2 : 1, borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}><Icon name="basket-outline" color={c.green} /><Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text></Pressable></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Lojas do catálogo. Sua preferência fica salva neste dispositivo. O orçamento usa os preços cadastrados na API.</Text></>}
+        {step === 2 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{markets.length === 0 && <Text style={{ color: c.muted }}>Nenhum supermercado cadastrado. Você pode continuar.</Text>}{markets.map((market) => <View key={market} style={{ width: '30%', flexGrow: 1 }}><Pressable accessibilityRole="button" accessibilityLabel={market} onPress={() => updateProfile({ market })} style={{ alignItems: 'center', padding: 10, borderWidth: profile.market === market ? 2 : 1, borderColor: profile.market === market ? c.green : c.border, borderRadius: 18, gap: 6 }}>{marketImages[market] ? <Image source={marketImages[market]} resizeMode="contain" style={{ width: 64, height: 44 }} /> : <Icon name="basket-outline" color={c.green} />}<Text style={{ color: c.text, fontSize: 13, textAlign: 'center' }}>{market}</Text></Pressable></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Sua preferência fica salva neste dispositivo. O orçamento usa preços acadêmicos de referência.</Text></>}
         {step === 3 && <><View style={[ui.row, { justifyContent: 'center', gap: 35 }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Diminuir pessoas" disabled={profile.people <= 1} onPress={() => updateProfile({ people: profile.people - 1 })} style={{ padding: 12, backgroundColor: c.white, borderRadius: 30, opacity: profile.people <= 1 ? .35 : 1 }}><Icon name="remove" color={c.text} /></Pressable>
           <Text style={{ fontSize: 74, fontWeight: '800', color: c.text }}>{profile.people}</Text>

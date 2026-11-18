@@ -16,7 +16,7 @@ export function RecipeCard({ recipe, day, onPress }: { recipe: Recipe; day?: str
       </View>
       <View style={{ padding: 16, gap: 9 }}>
         <Text style={{ color: c.text, fontSize: 19, fontWeight: '800', lineHeight: 22 }}>{recipe.name}</Text>
-        <Text style={{ color: c.muted }}>{recipe.ingredients.length} ingredientes · {recipe.servings} porções na receita-base</Text>
+        <Text style={{ color: c.muted }}>{recipe.preparationMinutes != null && `${recipe.preparationMinutes} min · `}{recipe.ingredients.length} ingredientes · {recipe.servings} porções na receita-base</Text>
       </View>
     </Pressable>
     <Pressable onPress={() => toggleFavorite(recipe.id)} accessibilityRole="button" accessibilityLabel={state.favorites.includes(recipe.id) ? `Remover ${recipe.name} dos favoritos` : `Favoritar ${recipe.name}`} hitSlop={10} style={{ position: 'absolute', top: 12, right: 12, backgroundColor: '#FFFFFF', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}><Icon name={state.favorites.includes(recipe.id) ? 'heart' : 'heart-outline'} color={state.favorites.includes(recipe.id) ? '#CE5A6D' : '#176C4A'} size={20}/></Pressable>

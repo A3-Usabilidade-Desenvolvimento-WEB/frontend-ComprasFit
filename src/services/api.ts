@@ -8,6 +8,7 @@ export interface Product {
 }
 export interface Recipe {
   id: string; name: string; servings: number; vegetarian: boolean; steps: string[];
+  preparationMinutes?: number | null;
   preferences: { restrictions: string[]; appliances: string[]; goals: string[] };
   ingredients: { productId: string; name: string; quantity: number; unit: Unit | null }[];
 }
@@ -86,6 +87,7 @@ async function request<T>(path: string, userId?: string, method = 'GET', body?: 
 const planPath = (id: string) => '/planejamento/' + encodeURIComponent(id);
 export const api = {
   products: () => request<Product[]>('/produtos'),
+  stores: () => request<string[]>('/supermercados'),
   recipes: () => request<Recipe[]>('/receitas'),
   history: (user: string) => request<Summary[]>('/planejamento', user),
   plan: (user: string, id: string) => request<Planning>(planPath(id), user),

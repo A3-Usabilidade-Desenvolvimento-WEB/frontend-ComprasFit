@@ -29,7 +29,7 @@ export function RecipeDetails({ id, day, onBack, onReplace }: { id: string; day?
       <View style={{ backgroundColor: '#152013A8', padding: 20 }}><Text style={{ color: '#FFFFFF', fontSize: 28, lineHeight: 30, fontWeight: '800' }}>{recipe.name}</Text></View>
     </ImageBackground>
     <View style={{ padding: 22, gap: 20, flex: wide ? 1 : undefined, minWidth: 0 }}>
-      <Text style={{ color: c.muted }}>{people} porção(ões) · Receita-base para {recipe.servings}</Text>
+      <Text style={{ color: c.muted }}>{recipe.preparationMinutes != null && `${recipe.preparationMinutes} min · `}{people} porção(ões) · Receita-base para {recipe.servings}</Text>
       <Text accessibilityRole="header" style={{ fontSize: 22, fontWeight: '700', color: c.text }}>Ingredientes</Text>
       <Card style={{ padding: 0 }}>{recipe.ingredients.map((ingredient, i) => <View key={ingredient.name} style={[ui.row, { padding: 16, borderTopWidth: i ? 1 : 0, borderColor: c.border }]}><Text style={{ flex: 1, color: c.text }}>{ingredient.name}</Text><Text style={{ color: c.muted }}>{(ingredient.quantity * people / recipe.servings).toLocaleString('pt-BR')} {ingredient.unit}</Text></View>)}</Card>
       <Text accessibilityRole="header" style={{ fontSize: 22, fontWeight: '700', color: c.text }}>Modo de preparo</Text>
