@@ -6,6 +6,18 @@ import { Button, Card, Heading, Icon, useTheme } from '../components/ui';
 import { useApp } from '../state/AppState';
 import { normalizePersonName, personNameError, personNameMaxLength } from '../data/personName';
 
+function accountErrorMessage(error: unknown): string {
+  const message = errorText(error);
+  const emailRateLimit = error instanceof Error && 'code' in error && error.code === 'over_email_send_rate_limit';
+  if (emailRateLimit || /email rate limit exceeded/i.test(message)) {
+    return 'O serviço atingiu o limite de envio de e-mails. Você pode entrar como visitante agora ou tentar o cadastro mais tarde.';
+  }
+  if (/email address not authorized/i.test(message)) {
+    return 'O serviço de e-mail ainda não entrega confirmações para este endereço. Você pode usar o app como visitante.';
+  }
+  return message;
+}
+
 const inputStyle = (color: string, borderColor: string) => ({ color, borderColor, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 18, marginTop: 7 });
 
 export function Account({ onBack }: { onBack?: () => void }) {
@@ -20,7 +32,7 @@ export function Account({ onBack }: { onBack?: () => void }) {
   const [message, setMessage] = React.useState('');
   async function perform(action: () => Promise<void>) {
     setMessage(''); setBusy(true);
-    try { await action(); } catch (error) { setMessage(errorText(error)); } finally { setBusy(false); }
+    try { await action(); } catch (error) { setMessage(accountErrorMessage(error)); } finally { setBusy(false); }
   }
   const save = () => perform(async () => {
     const validName = normalizePersonName(name);
@@ -61,7 +73,7 @@ export function Account({ onBack }: { onBack?: () => void }) {
       {mode === 'signup' && <><Text style={{ color: c.text, fontSize: 21, fontWeight: '700' }}>Criar conta</Text>{field('Nome', name, setName, { maxLength: personNameMaxLength })}{field('E-mail', email, setEmail, { email: true })}{field('Senha (mínimo 8 caracteres)', password, setPassword, { secure: true })}{field('Confirmar senha', confirm, setConfirm, { secure: true })}<Button title="Cadastrar" busy={busy} onPress={save} /><Button title="Já tenho conta" secondary onPress={() => { setMode('login'); setMessage(''); }} /></>}
       {mode === 'login' && <><Text style={{ color: c.text, fontSize: 21, fontWeight: '700' }}>Entrar na conta</Text>{field('E-mail', email, setEmail, { email: true })}{field('Senha', password, setPassword, { secure: true })}<Button title="Entrar" busy={busy} onPress={login} /><Button title="Criar conta" secondary onPress={() => { setMode('signup'); setMessage(''); }} /></>}
       {mode === 'profile' && <><Text style={{ color: c.text, fontSize: 21, fontWeight: '700' }}>Meu perfil</Text>{field('Nome', name, setName, { maxLength: personNameMaxLength })}<Text style={{ color: c.muted }}>{email}</Text><Button title="Salvar nome" busy={busy} onPress={updateName} /><Button title="Sair da conta" secondary onPress={logout} /></>}
-      {!session && mode === 'login' && <Button title="Entrar como visitante" secondary busy={busy} onPress={guest} />}
+      {!session && mode !== 'profile' && <Button title="Entrar como visitante" secondary busy={busy} onPress={guest} />}
       {session?.user.is_anonymous && <Text style={{ color: c.muted }}>Ao sair, você perde o acesso a esta sessão de visitante.</Text>}
       {!!message && <Text accessibilityRole="alert" style={{ color: c.forest, lineHeight: 21 }}>{message}</Text>}
     </Card>

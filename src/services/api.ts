@@ -19,6 +19,7 @@ export interface Recipe {
 export interface PlanningInput {
   budget: number; people: number; periodDays: number; mealsPerDay: number;
   buyingPreference: 'lowest_price' | 'variety'; vegetarian: boolean;
+  vegan?: boolean;
   requireProteinMain?: boolean;
   mealKind?: "main" | "snack";
   recipeIds?: string[]; mealRecipeIds?: string[]; dayLabels?: string[];

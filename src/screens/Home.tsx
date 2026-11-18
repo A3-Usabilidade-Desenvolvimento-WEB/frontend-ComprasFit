@@ -3,12 +3,15 @@ import { AppState, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, Card, Icon, useTheme } from '../components/ui';
 import { PlanReviewCard } from '../components/PlanReviewCard';
 import { RecipeCard } from '../components/RecipeCard';
-import { money } from '../data/planner';
+import { eligibleRecipes, money } from '../data/planner';
 import { useResponsive } from '../components/responsive';
+import { errorText } from '../services/api';
 import { useApp } from '../state/AppState';
 
 export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, day?: string) => void; onShopping: () => void; onEdit: () => void }) {
-  const { session, state, recipes, active, suggestions, suggestionStatus, loadMoreSuggestions } = useApp();
+  const { session, state, recipes, active, generate, suggestions, suggestionStatus, loadMoreSuggestions } = useApp();
+  const [regenerating, setRegenerating] = React.useState(false);
+  const [planError, setPlanError] = React.useState('');
   const [hour, setHour] = React.useState(new Date().getHours());
   React.useEffect(() => { const sub = AppState.addEventListener('change', status => { if (status === 'active') setHour(new Date().getHours()); }); const interval = setInterval(() => setHour(new Date().getHours()), 60000); return () => { sub.remove(); clearInterval(interval); }; }, []);
   const greeting = hour >= 5 && hour < 12 ? 'BOM DIA' : hour >= 12 && hour < 18 ? 'BOA TARDE' : 'BOA NOITE';
@@ -18,10 +21,27 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
   const list = active?.shoppingList.items ?? [];
   const people = active?.params.people ?? state.profile.people;
   const meals = state.plan.length;
+  const compatible = eligibleRecipes(state.profile, recipes);
+  const compatibleIds = new Set(compatible.map(recipe => recipe.id));
+  const needsRefresh = state.plan.some(meal => !compatibleIds.has(meal.recipeId));
+  const distinctMeals = new Set(state.plan.map(meal => meal.recipeId)).size;
   const days = active?.params.periodDays ?? state.profile.days.length;
   const checked = list.filter(item => item.purchased).length;
   const firstName = (state.profile.name || 'Chef').trim().split(' ')[0];
   const percent = (active?.budget ?? state.profile.budget) > 0 ? Math.min(100, Math.round(total / (active?.budget ?? state.profile.budget) * 100)) : 0;
+  async function regenerate() {
+    if (regenerating) return;
+    setRegenerating(true);
+    setPlanError('');
+    try {
+      await generate(state.profile);
+    } catch (error) {
+      setPlanError(errorText(error));
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
   return <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: wide ? 36 : 22, paddingTop: 28, paddingBottom: 48, gap: 25 }}>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <View style={{ flex: 1, gap: 7 }}>
@@ -49,7 +69,7 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
     {!!session && !!active && <PlanReviewCard key={active.id} userId={session.user.id} planningId={active.id} />}
     <View style={{ gap: 15 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ gap: 4 }}><Text accessibilityRole="header" style={{ color: c.text, fontSize: 25, fontWeight: '800', letterSpacing: -.6 }}>Seu cardápio</Text><Text style={{ color: c.muted, fontSize: 15 }}>Receitas para sua semana</Text></View>
+        <View style={{ gap: 4 }}><Text accessibilityRole="header" style={{ color: c.text, fontSize: 25, fontWeight: '800', letterSpacing: -.6 }}>Seu cardápio</Text><Text style={{ color: c.muted, fontSize: 15 }}>{distinctMeals} {distinctMeals === 1 ? 'receita diferente' : 'receitas diferentes'}</Text></View>
         <View style={{ paddingHorizontal: 12, paddingVertical: 7, backgroundColor: '#EDF6F0', borderRadius: 20 }}><Text style={{ color: c.green, fontWeight: '700', fontSize: 14 }}>{state.plan.length} refeições</Text></View>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15 }}>
@@ -60,6 +80,12 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
       </View>
       {!state.plan.length && <Card><Text style={{ color: c.muted }}>Nenhuma receita compatível. Ajuste suas preferências para montar um plano.</Text></Card>}
     </View>
+    {needsRefresh && <Text accessibilityRole="alert" style={{ color: c.text, lineHeight: 21 }}>
+      Algumas refeições do plano salvo ficaram fora das preferências atuais. Monte outro cardápio para atualizar a lista.
+    </Text>}
+    {!!planError && <Text accessibilityRole="alert" style={{ color: c.text }}>{planError}</Text>}
+    {(compatible.length > 1 || (needsRefresh && compatible.length === 1)) &&
+      <Button title="Variar meu cardápio" secondary busy={regenerating} onPress={regenerate} />}
     <Button title="Editar planejamento" secondary icon="options-outline" onPress={onEdit}/>
     <View style={{ gap: 15 }}>
       {suggestions && <>

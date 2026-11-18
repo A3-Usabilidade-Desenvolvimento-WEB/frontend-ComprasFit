@@ -8,15 +8,15 @@ const recipe: Recipe = { id: 'r1', mealKind: 'main', hasProteinMain: true, name:
 test('maps a weekly dinner to ordered labels and the API contract', () => {
   const profile = { ...defaultProfile, restrictions: ['Vegano'], days: ['Domingo', 'Terça-feira'] };
   assert.deepEqual(planningInput(profile, [recipe]), { budget: 135, people: 1, periodDays: 2,
-    mealsPerDay: 2, mealKind: 'main', buyingPreference: 'variety', vegetarian: true, requireProteinMain: false, recipeIds: ['r1'], dayLabels: ['Terça-feira', 'Domingo'] });
+    mealsPerDay: 2, mealKind: 'main', buyingPreference: 'variety', vegetarian: true, vegan: true, requireProteinMain: false, recipeIds: ['r1'], dayLabels: ['Terça-feira', 'Domingo'] });
 });
 test('requires every restriction and a compatible appliance', () => {
   assert.deepEqual(eligibleRecipes({ ...defaultProfile, restrictions: ['Vegano','Glúten'] }, [recipe]), []);
   assert.throws(() => planningInput({ ...defaultProfile, appliances: ['Forno'] }, [recipe]));
 });
 test('goals prioritize compatible recipes from the server', () => {
-  const other = { ...recipe, id: 'r2', preferences: { ...recipe.preferences, goals: ['Diferente'] } };
-  const params = planningInput({ ...defaultProfile, goals: ['Diferente'] }, [recipe, other]);
+  const other = { ...recipe, id: 'r2', preferences: { ...recipe.preferences, goals: ['Conforto e sabor'] } };
+  const params = planningInput({ ...defaultProfile, goals: ['Conforto e sabor'] }, [recipe, other]);
   assert.deepEqual(params.recipeIds, ['r2', 'r1']);
   assert.equal(params.buyingPreference, 'variety');
 });
@@ -44,4 +44,15 @@ test('separa jantares de lanches e exclui acompanhamentos das duas opções', ()
   assert.equal(plan.mealsPerDay, 1);
   assert.equal(plan.mealKind, 'snack');
   assert.deepEqual(plan.recipeIds, ['bolo']);
+});
+
+test('diferente prioriza pratos veganos menos usados no cardápio anterior', () => {
+  const feijao = { ...recipe, id: 'feijao' };
+  const lentilha = { ...recipe, id: 'lentilha' };
+  const pasta = { ...recipe, id: 'pasta' };
+  const side = { ...recipe, id: 'batata', mealKind: 'side' as const };
+  const profile = { ...defaultProfile, goals: ['Diferente'], restrictions: ['Vegano'] };
+  const params = planningInput(profile, [feijao, lentilha, pasta, side], ['feijao', 'lentilha', 'feijao']);
+  assert.deepEqual(params.recipeIds, ['pasta', 'lentilha', 'feijao']);
+  assert.equal(params.vegan, true);
 });

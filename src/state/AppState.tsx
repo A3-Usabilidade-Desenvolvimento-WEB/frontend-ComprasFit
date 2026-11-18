@@ -66,6 +66,10 @@ function useStore(session: Session | null, ready: boolean) {
         profile.people = plan.params.people;
         profile.budget = plan.budget;
         profile.days = plan.params.dayLabels ?? weekdays.slice(0, plan.params.periodDays);
+        if (plan.params.vegan !== undefined) {
+          profile.restrictions = profile.restrictions.filter(restriction => restriction !== 'Vegano');
+          if (plan.params.vegan) profile.restrictions.push('Vegano');
+        }
         if (plan.params.vegetarian && !profile.restrictions.includes('Vegano') && !profile.restrictions.includes('Vegetariano')) {
           profile.restrictions = [...profile.restrictions, 'Vegetariano'];
         }
@@ -136,7 +140,7 @@ function useStore(session: Session | null, ready: boolean) {
     generate: async (profile: Profile) => {
       const name = normalizePersonName(profile.name);
       if (!name) throw new Error(personNameError);
-      await savePlan({ ...profile, name }, planningInput(profile, recipes));
+      await savePlan({ ...profile, name }, planningInput(profile, recipes, plan.map(meal => meal.recipeId)));
     },
     swap: async (day: string, id: string) => {
       if (!active) return;

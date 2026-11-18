@@ -4,7 +4,7 @@ import Slider from '@react-native-community/slider';
 import { Button, Chip, Heading, Icon, ui, useTheme } from '../components/ui';
 import { marketImages } from '../data/images';
 import { goalOptions, weekdays } from '../data/recipes';
-import { eligibleRecipes, money } from '../data/planner';
+import { appliances, eligibleRecipes, money } from '../data/planner';
 import type { MealCoverage, Profile } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
@@ -34,6 +34,9 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
   };
   const validName = normalizePersonName(profile.name);
   const valid = step === 1 ? validName !== null : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile, recipes).length > 0 : true;
+  const alternativeAppliances = step === 8 && !valid
+    ? appliances.filter(appliance => eligibleRecipes({ ...profile, appliances: [appliance] }, recipes).length > 0)
+    : [];
   const finish = async () => {
     if (generating) return;
     if (!validName) {
@@ -119,7 +122,9 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
         {step === 5 && <><Text style={{ fontSize: 58, fontWeight: '800', textAlign: 'center', color: c.text }}>{money(profile.budget)}</Text><Text style={{ textAlign: 'center', color: c.muted }}>de limite para as refeições selecionadas</Text><Slider accessibilityLabel="Orçamento semanal" minimumValue={30} maximumValue={750} step={5} value={profile.budget} onValueChange={budget => updateProfile({ budget })} minimumTrackTintColor={c.green} maximumTrackTintColor={c.border} thumbTintColor={c.green} style={{ width: '100%', height: 48 }} /><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: c.muted }}>R$ 30</Text><Text style={{ color: c.muted }}>R$ 750</Text></View></>}
         {step === 6 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{goalOptions.map(goal => <View key={goal.name} style={{ width: '46%', flexGrow: 1 }}><Chip title={goal.label ?? goal.name} emoji={goal.emoji} color={goal.color} selected={profile.goals.includes(goal.name)} onPress={() => toggle('goals', goal.name)} /></View>)}</View>}
         {step === 7 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Nenhuma', 'Vegetariano', 'Vegano', 'Peixe', 'Glúten'].map((restriction, i) => <View key={restriction} style={{ width: '46%', flexGrow: 1 }}><Chip title={restriction} emoji={['🍽️','🥕','🥬','🐟','🌾'][i]} selected={restriction === 'Nenhuma' ? !profile.restrictions.length : profile.restrictions.includes(restriction)} onPress={() => toggle('restrictions', restriction)} /></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Confira sempre os rótulos dos produtos em caso de alergias.</Text></>}
-        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Fogão', 'Micro-ondas', 'Air fryer', 'Forno'].map((appliance, i) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={appliance} emoji={['🍳','♨️','🥘','🍞'][i]} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>Nenhuma receita combina com seu objetivo, suas restrições e os equipamentos selecionados. Volte para ajustar o tipo de refeição ou suas preferências, ou selecione outro equipamento.</Text>}</>}
+        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{appliances.map((appliance, i) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={appliance} emoji={['🍳','♨️','🥘','🍞'][i]} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>{alternativeAppliances.length
+          ? `Selecione um equipamento com receitas compatíveis: ${alternativeAppliances.join(', ')}.`
+          : 'Nenhuma receita combina com o tipo de refeição e as restrições selecionadas. Volte para ajustar suas escolhas.'}</Text>}</>}
       </View>
     </ScrollView>
     {!!message && <Text accessibilityRole="alert" style={{ paddingHorizontal: 24, color: c.text }}>{message}</Text>}
