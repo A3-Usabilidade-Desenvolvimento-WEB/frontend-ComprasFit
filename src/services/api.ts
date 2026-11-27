@@ -24,6 +24,7 @@ export interface PlanningInput {
   vegan?: boolean;
   requireProteinMain?: boolean;
   mealKind?: "main" | "snack";
+  previousRecipeIds?: string[];
   recipeIds?: string[]; mealRecipeIds?: string[]; dayLabels?: string[];
 }
 export interface ShoppingItem {

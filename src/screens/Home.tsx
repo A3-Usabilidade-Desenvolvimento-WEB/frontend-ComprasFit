@@ -34,7 +34,7 @@ export function Home({ onRecipe, onShopping, onEdit }: { onRecipe: (id: string, 
     setRegenerating(true);
     setPlanError('');
     try {
-      await generate(state.profile);
+      await generate(state.profile, true);
     } catch (error) {
       setPlanError(errorText(error));
     } finally {

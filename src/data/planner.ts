@@ -44,7 +44,7 @@ export function filterAdjustment(profile: Profile, recipes: Recipe[]) {
 
 export const applianceLabel = (id: string) => id === 'Air fryer' ? 'Airfry' : id;
 
-export function planningInput(profile: Profile, recipes: Recipe[], previousRecipeIds: string[] = []): PlanningInput {
+export function planningInput(profile: Profile, recipes: Recipe[], previousRecipeIds: string[] = [], vary = false): PlanningInput {
   const available = eligibleRecipes(profile, recipes);
   if (!available.length) throw new Error('Nenhuma receita combina com seu objetivo, suas restrições e os equipamentos selecionados.');
   const previousUses = new Map<string, number>();
@@ -63,6 +63,7 @@ export function planningInput(profile: Profile, recipes: Recipe[], previousRecip
     appliances: profile.appliances, restrictions: profile.restrictions,
     dayLabels, buyingPreference: profile.buyingPreference,
     ...(profile.market ? { market: profile.market } : {}),
+    ...((vary || profile.goals.includes('Diferente')) && previousRecipeIds.length ? { previousRecipeIds } : {}),
     requireProteinMain: profile.goals.includes(proteinGoal),
     vegan: profile.restrictions.includes('Vegano'),
     vegetarian: profile.restrictions.some(r => r === 'Vegetariano' || r === 'Vegano'),

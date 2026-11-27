@@ -153,10 +153,10 @@ function useStore(session: Session | null, ready: boolean) {
       });
     },
     toggleFavorite: (id: string) => setLocal(s => ({ ...s, favorites: s.favorites.includes(id) ? s.favorites.filter(f => f !== id) : [...s.favorites, id] })),
-    generate: async (profile: Profile) => {
+    generate: async (profile: Profile, vary = false) => {
       const name = normalizePersonName(profile.name);
       if (!name) throw new Error(personNameError);
-      await savePlan({ ...profile, name }, planningInput(profile, recipes, plan.map(meal => meal.recipeId)));
+      await savePlan({ ...profile, name }, planningInput(profile, recipes, plan.map(meal => meal.recipeId), vary));
     },
     swap: async (day: string, id: string) => {
       if (!active) return;
