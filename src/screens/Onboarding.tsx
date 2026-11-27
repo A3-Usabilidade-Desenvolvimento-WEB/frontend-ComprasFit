@@ -3,8 +3,8 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View 
 import Slider from '@react-native-community/slider';
 import { Button, Chip, Heading, Icon, ui, useTheme } from '../components/ui';
 import { marketImages } from '../data/images';
-import { goalOptions, weekdays } from '../data/recipes';
-import { appliances, eligibleRecipes, money } from '../data/planner';
+import { goalOptions, proteinGoal, weekdays } from '../data/recipes';
+import { appliances, applianceLabel, eligibleRecipes, filterAdjustment, money } from '../data/planner';
 import type { MealCoverage, Profile } from '../data/planner';
 import { useResponsive } from '../components/responsive';
 import { useApp } from '../state/AppState';
@@ -34,10 +34,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
   };
   const validName = normalizePersonName(profile.name);
   const valid = step === 1 ? validName !== null : step === 4 ? profile.days.length > 0 : step === 8 ? eligibleRecipes(profile, recipes).length > 0 : true;
-  const applianceLabel = (appliance: string) => appliance === 'Air fryer' ? 'Airfryer' : appliance;
-  const alternativeAppliances = step === 8 && !valid
-    ? appliances.filter(appliance => eligibleRecipes({ ...profile, appliances: [appliance] }, recipes).length > 0)
-    : [];
+  const adjustment = step === 8 && !valid ? filterAdjustment(profile, recipes) : null;
   const finish = async () => {
     if (generating) return;
     if (!validName) {
@@ -96,7 +93,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
     <View style={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 22, backgroundColor: '#FFFFFF', width: '100%', maxWidth: 480, alignSelf: 'center' }}><Button title="Começar" icon="arrow-forward" onPress={() => welcomeOnly ? onStart?.() : setStep(1)} /></View>
   </View>;
   const titles = ['','Qual é seu nome?', 'Escolha seu supermercado', 'Para quantas pessoas você cozinha?', 'Em quais dias você vai cozinhar?', 'Qual é seu orçamento semanal?', 'Qual é seu objetivo?', 'Alguma restrição alimentar?', 'Quais equipamentos você usa para cozinhar?'];
-  const subtitles = ['', 'Vamos deixar tudo com a sua cara.', 'Seu mercado favorito para planejar a semana.', 'Selecione o número de pessoas.', 'Escolha os dias das suas refeições planejadas.', 'Escolha quanto você quer investir nas refeições.', 'Escolha até 3 opções que combinam com você.', 'Selecione todas que se aplicam.', 'Selecione pelo menos um para o planejamento.'];
+  const subtitles = ['', 'Vamos deixar tudo com a sua cara.', 'Seu mercado favorito para planejar a semana.', 'Selecione o número de pessoas.', 'Escolha os dias das suas refeições planejadas.', 'Escolha quanto você quer investir nas refeições.', 'Escolha até 3 opções que combinam com você.', 'Selecione todas que se aplicam.', 'Marque os equipamentos disponíveis. Deixe em branco para preparos sem equipamento.'];
   return <View style={{ flex: 1, width: '100%', maxWidth: wide ? 660 : undefined, alignSelf: 'center', paddingVertical: wide ? 20 : 0 }}>
     <View style={[ui.row, { padding: 24 }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => editing && step === initialStep ? onCancel?.() : setStep(Math.max(editing ? 1 : 0, step - 1))} hitSlop={12}><Icon name="arrow-back" color={c.text} /></Pressable>
@@ -126,7 +123,7 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
               </View>
             ))}
           </View>
-          <Text style={{ color: c.muted, fontSize: 14 }}>Sua preferência fica salva neste dispositivo. O orçamento usa preços acadêmicos de referência.</Text>
+          <Text style={{ color: c.muted, fontSize: 14 }}>A lista informa a origem dos preços, inclusive quando a cotação vem de outro supermercado.</Text>
         </>}
         {step === 3 && <><View style={[ui.row, { justifyContent: 'center', gap: 35 }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Diminuir pessoas" disabled={profile.people <= 1} onPress={() => updateProfile({ people: profile.people - 1 })} style={{ padding: 12, backgroundColor: c.white, borderRadius: 30, opacity: profile.people <= 1 ? .35 : 1 }}><Icon name="remove" color={c.text} /></Pressable>
@@ -139,12 +136,18 @@ export function Onboarding({ onFinish, editing = false, onCancel, initialStep = 
             {mealOptions.map(option => <Chip key={option.value} title={option.label} selected={profile.coverage === option.value} onPress={() => updateProfile({ coverage: option.value })} />)}
           </View>
           <Text style={{ textAlign: 'center', color: c.muted }}>{profile.days.length} dias selecionados</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{weekdays.map(day => <View key={day} style={{ width: '46%', flexGrow: 1 }}><Chip title={day} selected={profile.days.includes(day)} onPress={() => toggle('days', day)} /></View>)}</View></>}
-        {step === 5 && <><Text style={{ fontSize: 58, fontWeight: '800', textAlign: 'center', color: c.text }}>{money(profile.budget)}</Text><Text style={{ textAlign: 'center', color: c.muted }}>de limite para as refeições selecionadas</Text><Slider accessibilityLabel="Orçamento semanal" minimumValue={30} maximumValue={750} step={5} value={profile.budget} onValueChange={budget => updateProfile({ budget })} minimumTrackTintColor={c.green} maximumTrackTintColor={c.border} thumbTintColor={c.green} style={{ width: '100%', height: 48 }} /><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: c.muted }}>R$ 30</Text><Text style={{ color: c.muted }}>R$ 750</Text></View></>}
+        {step === 5 && <><Text style={{ fontSize: 58, fontWeight: '800', textAlign: 'center', color: c.text }}>{money(profile.budget)}</Text><Text style={{ textAlign: 'center', color: c.muted }}>de limite para as refeições selecionadas</Text><Slider accessibilityLabel="Orçamento semanal" minimumValue={30} maximumValue={750} step={5} value={profile.budget} onValueChange={budget => updateProfile({ budget })} minimumTrackTintColor={c.green} maximumTrackTintColor={c.border} thumbTintColor={c.green} style={{ width: '100%', height: 48 }} /><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: c.muted }}>R$ 30</Text><Text style={{ color: c.muted }}>R$ 750</Text></View>
+          <Chip title="Economizar" selected={profile.buyingPreference === 'lowest_price'} onPress={() => updateProfile({ buyingPreference: 'lowest_price' })} />
+          <Chip title="Variar e aproveitar o orçamento" selected={profile.buyingPreference === 'variety'} onPress={() => updateProfile({ buyingPreference: 'variety' })} />
+          <Text style={{ color: c.muted }}>{profile.buyingPreference === 'lowest_price' ? 'Busca uma compra mais barata, alternando até três receitas.' : 'Prioriza pratos e proteínas diferentes e compara o valor das embalagens dentro do limite.'}</Text></>}
         {step === 6 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{goalOptions.map(goal => <View key={goal.name} style={{ width: '46%', flexGrow: 1 }}><Chip title={goal.label ?? goal.name} emoji={goal.emoji} color={goal.color} selected={profile.goals.includes(goal.name)} onPress={() => toggle('goals', goal.name)} /></View>)}</View>}
-        {step === 7 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Nenhuma', 'Vegetariano', 'Vegano', 'Peixe', 'Glúten'].map((restriction, i) => <View key={restriction} style={{ width: '46%', flexGrow: 1 }}><Chip title={restriction} emoji={['🍽️','🥕','🥬','🐟','🌾'][i]} selected={restriction === 'Nenhuma' ? !profile.restrictions.length : profile.restrictions.includes(restriction)} onPress={() => toggle('restrictions', restriction)} /></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Confira sempre os rótulos dos produtos em caso de alergias.</Text></>}
-        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{appliances.map((appliance) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip title={applianceLabel(appliance)} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <Text style={{ color: '#B44335', lineHeight: 22 }}>{alternativeAppliances.length
-          ? `Selecione um equipamento com receitas compatíveis: ${alternativeAppliances.map(applianceLabel).join(', ')}.`
-          : 'Nenhuma receita combina com o tipo de refeição e as restrições selecionadas. Volte para ajustar suas escolhas.'}</Text>}</>}
+        {step === 7 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{['Nenhuma', 'Vegetariano', 'Vegano', 'Peixe', 'Glúten'].map((restriction, i) => <View key={restriction} style={{ width: '46%', flexGrow: 1 }}><Chip title={restriction === 'Peixe' || restriction === 'Glúten' ? 'Sem ' + restriction.toLowerCase() : restriction} emoji={['🍽️','🥕','🥬','🐟','🌾'][i]} selected={restriction === 'Nenhuma' ? !profile.restrictions.length : profile.restrictions.includes(restriction)} onPress={() => toggle('restrictions', restriction)} /></View>)}</View><Text style={{ color: c.muted, fontSize: 14 }}>Confira sempre os rótulos dos produtos em caso de alergias.</Text></>}
+        {step === 8 && <><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{appliances.map((appliance) => <View key={appliance} style={{ width: '46%', flexGrow: 1 }}><Chip preserveLabel title={applianceLabel(appliance)} selected={profile.appliances.includes(appliance)} onPress={() => toggle('appliances', appliance)} /></View>)}</View>{!valid && <View style={{ gap: 10 }}>
+            <Text accessibilityRole="alert" style={{ color: '#B44335', lineHeight: 22 }}>
+              Nenhuma opção de {profile.coverage === 'snack' ? 'lanche' : 'refeição principal'} com {profile.appliances.map(applianceLabel).join(', ') || 'preparo sem equipamento'}{profile.restrictions.length ? ' e os filtros ' + profile.restrictions.join(', ') : ''}{profile.goals.includes(proteinGoal) ? ' e proteína principal' : ''}. {profile.excludedRecipeIds.length > 0 ? 'As receitas marcadas para evitar também ficam de fora.' : ''}
+            </Text>
+            {adjustment ? <Button title={adjustment.label} onPress={() => updateProfile(adjustment.patch)} /> : <Text style={{ color: c.muted }}>Você pode rever os equipamentos e as receitas a evitar nas configurações. As restrições alimentares continuam ativas.</Text>}
+          </View>}</>}
       </View>
     </ScrollView>
     {!!message && <Text accessibilityRole="alert" style={{ paddingHorizontal: 24, color: c.text }}>{message}</Text>}

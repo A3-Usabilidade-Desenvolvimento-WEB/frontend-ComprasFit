@@ -22,10 +22,10 @@ export function Heading({ title, subtitle }: { title: string; subtitle?: string 
   const c = useTheme();
   return <View style={{ gap: 10 }}><Text accessibilityRole="header" style={[ui.heading, { color: c.text }]}>{title}</Text>{subtitle && <Text style={[ui.body, { color: c.muted }]}>{subtitle}</Text>}</View>;
 }
-export function Chip({ title, selected, onPress, emoji, color }: { title: string; selected: boolean; onPress: () => void; emoji?: string; color?: string }) {
+export function Chip({ title, selected, onPress, emoji, color, preserveLabel }: { title: string; selected: boolean; onPress: () => void; emoji?: string; color?: string; preserveLabel?: boolean }) {
   const c = useTheme();
   return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} aria-checked={selected} onPress={onPress} style={[ui.chip, { backgroundColor: selected ? color ?? '#E3EDC8' : c.white, borderColor: selected ? c.green : c.border }]}>
-    {emoji && <Text style={{ fontSize: 29 }}>{emoji}</Text>}<Text style={{ fontSize: 16, fontWeight: '600', color: selected ? '#20291F' : c.text, textAlign: 'center' }}>{title}</Text>
+    {emoji && <Text style={{ fontSize: 29 }}>{emoji}</Text>}<Text style={{ fontSize: 16, fontWeight: '600', color: selected ? '#20291F' : c.text, textAlign: 'center' }}>{preserveLabel && typeof document !== 'undefined' ? <span translate="no">{title}</span> : title}</Text>
     {selected && <View style={ui.check}><Icon name="checkmark-circle" size={16} color={c.forest} /></View>}
   </Pressable>;
 }

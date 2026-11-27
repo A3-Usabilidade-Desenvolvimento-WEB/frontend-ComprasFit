@@ -6,6 +6,38 @@ type RecipePhoto = {
 };
 
 export const recipePhotos: Partial<Record<string, RecipePhoto>> = {
+  'creme-tofu-cenoura': {
+    source: require('../../assets/recipes/creme-tofu-cenoura.jpg'),
+    credit: null,
+  },
+  'palitos-tofu-flocao': {
+    source: require('../../assets/recipes/palitos-tofu-flocao.jpg'),
+    credit: null,
+  },
+  'cuscuz-tofu-tomate': {
+    source: require('../../assets/recipes/cuscuz-tofu-tomate.jpg'),
+    credit: null,
+  },
+  'bife-acebolado-arroz': {
+    source: require('../../assets/recipes/bife-acebolado-arroz.jpg'),
+    credit: null,
+  },
+  'frango-assado-cenoura': {
+    source: require('../../assets/recipes/frango-assado-cenoura.jpg'),
+    credit: null,
+  },
+  'tilapia-tomate': {
+    source: require('../../assets/recipes/tilapia-tomate.jpg'),
+    credit: null,
+  },
+  'tofu-assado-integral': {
+    source: require('../../assets/recipes/tofu-assado-integral.jpg'),
+    credit: {"author":"Miscellaneous contributor · CC BY-SA 4.0 (redimensionada)","url":"https://commons.wikimedia.org/wiki/File:Baked_Tofu_with_Broccoli_and_Rice.jpg"},
+  },
+  'grao-bico-crocante': {
+    source: require('../../assets/recipes/grao-bico-crocante.jpg'),
+    credit: {"author":"Fumikas Sagisavas · CC0 1.0","url":"https://commons.wikimedia.org/wiki/File:Roasted_chickpeas.jpg"},
+  },
   'arroz-carreteiro': {
     source: require('../../assets/recipes/arroz-carreteiro.jpg'),
     credit: null,

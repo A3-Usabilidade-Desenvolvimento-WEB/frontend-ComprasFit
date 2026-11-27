@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { downloadList, shareList } from '../data/shareList';
 import { Card, Icon, ui, useTheme } from '../components/ui';
 import { money } from '../data/planner';
@@ -27,7 +27,7 @@ export function Shopping() {
       <Text style={{ fontSize: 13, letterSpacing: 2, color: c.muted }}>ESTA SEMANA</Text>
       <Text accessibilityRole="header" style={{ fontSize: 28, fontWeight: '800', color: c.text }}>Lista de compras</Text>
       {!!active && <Text style={{ textAlign: 'center', color: c.muted, lineHeight: 20 }}>
-        {money(active.total)} estimados para {active.meals.length} refeições. Valores de referência acadêmicos.
+        {money(active.total)} estimados para {active.meals.length} refeições. Os valores podem variar por loja e data.
       </Text>}
       <Text style={{ backgroundColor: '#DFEBD9', color: '#32643C', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }}>{count}/{items.length} itens comprados</Text>
     </View>
@@ -40,7 +40,8 @@ export function Shopping() {
       <Card style={{ padding: 0, overflow: 'hidden' }}>{items.filter(i => i.category === category).map((item, index) => {
         const checked = item.purchased;
         return <Pressable key={item.id} accessibilityRole="checkbox" accessibilityState={{ checked }} aria-checked={checked} accessibilityLabel={`${item.name}, ${item.packages} embalagens de ${item.packageSize} ${item.unit}`} onPress={() => { setMessage(''); toggleChecked(item.id).catch(e => setMessage(errorText(e))); }} style={[ui.row, { padding: 16, borderTopWidth: index ? 1 : 0, borderColor: c.border }]}>
-          <View style={{ flex: 1, gap: 4 }}><Text style={{ color: checked ? c.muted : c.text, fontWeight: '600', textDecorationLine: checked ? 'line-through' : 'none' }}>{item.name}</Text><Text style={{ color: c.muted, fontSize: 14 }}>{item.packages} × {item.packageSize.toLocaleString('pt-BR')} {item.unit} · {money(item.subtotal)}</Text></View>
+          <View style={{ flex: 1, gap: 4 }}><Text style={{ color: checked ? c.muted : c.text, fontWeight: '600', textDecorationLine: checked ? 'line-through' : 'none' }}>{item.name}</Text><Text style={{ color: c.muted, fontSize: 14 }}>{item.packages} × {item.packageSize.toLocaleString('pt-BR')} {item.unit} · {money(item.subtotal)} ({money(item.unitPrice)} por embalagem)</Text>
+            {item.priceReference?.url ? <Text accessibilityRole="link" onPress={event => { event.stopPropagation(); void Linking.openURL(item.priceReference!.url!); }} style={{ color: c.forest }}>{item.priceReference.store} · {item.priceReference.date.split('-').reverse().join('/')} {active?.params.market && active.params.market !== item.priceReference.store ? '· Cotação de outra loja (selecionada: ' + active.params.market + ')' : ''}</Text> : <Text style={{ color: c.muted }}>Estimativa acadêmica · sem cotação de loja confirmada</Text>}</View>
           <Icon name={checked ? 'checkmark-circle' : 'ellipse-outline'} color={checked ? c.green : c.border} size={25} />
         </Pressable>;
       })}</Card>

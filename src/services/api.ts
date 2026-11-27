@@ -13,12 +13,14 @@ export interface Recipe {
   hasProteinMain: boolean;
   id: string; name: string; servings: number; vegetarian: boolean; steps: string[];
   preparationMinutes?: number | null;
-  preferences: { restrictions: string[]; appliances: string[]; goals: string[] };
+  preferences: { restrictions: string[]; appliances: string[]; applianceOptions?: string[][]; goals: string[] };
   ingredients: { foodRole: FoodRole | null; mainProtein: boolean; productId: string; name: string; quantity: number; unit: Unit | null }[];
 }
 export interface PlanningInput {
   budget: number; people: number; periodDays: number; mealsPerDay: number;
   buyingPreference: 'lowest_price' | 'variety'; vegetarian: boolean;
+  market?: string;
+  appliances?: string[]; restrictions?: string[];
   vegan?: boolean;
   requireProteinMain?: boolean;
   mealKind?: "main" | "snack";
@@ -27,6 +29,7 @@ export interface PlanningInput {
 export interface ShoppingItem {
   id: string; productId: string; name: string; category: string; unit: Unit;
   quantityNeeded: number; packageSize: number; packages: number; leftover: number;
+  priceReference?: { store: string; date: string; url: string | null };
   unitPrice: number; subtotal: number; purchased: boolean;
 }
 export interface Planning {

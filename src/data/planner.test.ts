@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Recipe } from '../services/api';
-import { defaultProfile, eligibleRecipes, planningInput } from './planner';
+import { defaultProfile, eligibleRecipes, filterAdjustment, planningInput } from './planner';
 
 const recipe: Recipe = { id: 'r1', mealKind: 'main', hasProteinMain: true, name: 'Lentilha', servings: 2, vegetarian: true, steps: [], ingredients: [],
   preferences: { appliances: ['Fogão'], restrictions: ['Vegetariano', 'Vegano'], goals: ['Refeição leve'] } };
 test('maps a weekly dinner to ordered labels and the API contract', () => {
   const profile = { ...defaultProfile, restrictions: ['Vegano'], days: ['Domingo', 'Terça-feira'] };
   assert.deepEqual(planningInput(profile, [recipe]), { budget: 135, people: 1, periodDays: 2,
-    mealsPerDay: 2, mealKind: 'main', buyingPreference: 'variety', vegetarian: true, vegan: true, requireProteinMain: false, recipeIds: ['r1'], dayLabels: ['Terça-feira', 'Domingo'] });
+    appliances: ['Fogão'], restrictions: ['Vegano'], mealsPerDay: 2, mealKind: 'main', buyingPreference: 'variety', vegetarian: true, vegan: true, requireProteinMain: false, recipeIds: ['r1'], dayLabels: ['Terça-feira', 'Domingo'] });
 });
 test('requires every restriction and a compatible appliance', () => {
   assert.deepEqual(eligibleRecipes({ ...defaultProfile, restrictions: ['Vegano','Glúten'] }, [recipe]), []);
@@ -56,4 +56,16 @@ test('diferente prioriza pratos veganos menos usados no cardápio anterior', () 
   assert.deepEqual(params.recipeIds, ['pasta', 'lentilha', 'feijao']);
   assert.equal(params.vegan, true);
   assert.deepEqual(planningInput({ ...profile, excludedRecipeIds: ['feijao'] }, [feijao, lentilha, pasta, side]).recipeIds, ['lentilha', 'pasta']);
+});
+
+test('distingue equipamentos obrigatórios, alternativos e preparo a frio', () => {
+  const multi: Recipe = { ...recipe, preferences: { ...recipe.preferences, applianceOptions: [['Forno','Fogão'], ['Air fryer']] } };
+  assert.deepEqual(eligibleRecipes(defaultProfile, [multi]), []);
+  assert.equal(eligibleRecipes({ ...defaultProfile, appliances: ['Fogão','Forno'] }, [multi]).length, 1);
+  assert.equal(eligibleRecipes({ ...defaultProfile, appliances: ['Air fryer'] }, [multi]).length, 1);
+  const cold = { ...recipe, preferences: { ...recipe.preferences, applianceOptions: [[]] } };
+  assert.equal(eligibleRecipes({ ...defaultProfile, appliances: [] }, [cold]).length, 1);
+  const patch = filterAdjustment({ ...defaultProfile, restrictions: ['Vegano'] }, [multi])?.patch;
+  assert.ok(patch);
+  assert.equal(eligibleRecipes({ ...defaultProfile, restrictions: ['Vegano'], ...patch }, [multi]).length, 1);
 });

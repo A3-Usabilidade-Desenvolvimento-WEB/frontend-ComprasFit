@@ -66,6 +66,10 @@ function useStore(session: Session | null, ready: boolean) {
         }
         profile.coverage = plan.params.mealKind === "snack" ? "snack" : plan.params.mealsPerDay >= 2 ? "lunch-dinner" : "dinner";
         profile.people = plan.params.people;
+        if (plan.params.appliances) profile.appliances = plan.params.appliances;
+        if (plan.params.restrictions) profile.restrictions = plan.params.restrictions;
+        if (plan.params.market && stores.includes(plan.params.market)) profile.market = plan.params.market;
+        profile.buyingPreference = plan.params.buyingPreference;
         profile.budget = plan.budget;
         profile.days = plan.params.dayLabels ?? weekdays.slice(0, plan.params.periodDays);
         if (plan.params.vegan !== undefined) {
